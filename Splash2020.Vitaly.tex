@@ -38,7 +38,7 @@
 \section{\uppercase{Introduction}}
 % \noindent 
 Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve useful tasks on the source code. One of the noteworthy applications of modeling source code is the source code search. In this application a user can find a relevant code snippet using a natural language query, and such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function. We want to study how relevant is the information that can be extracted from source code beyond the function body. 
-
+ 
 Source code contains rich information about a particular function. Notably, a lot of information is present on the package and inter-project levels. A package contain the information about contextual similarity of functions. The functions that are implemented in the same package are likely to have related purpose. The information about how particular functions are used in different projects can tell us which packages are often used together, what are the common combinations of functions used in different projects. On these levels of abstractions one does not concern with the particular way the function is implemented and can learn useful insights about function's purpose simply from observing the way it is used. This level of abstraction can potentially facilitate a better source code search. 
 
 The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, package dependencies, variable usage, inheritance dependencies, and others. Graph representation is an additional approach to represent the source code besides abstract syntax trees (ASTs), and this method of representation is subject to evaluation. In this work we aim at evaluating what kind of information can be inferred from high-level inter project representation of the source code. We purposefully do not consider the AST representations as their study was addressed in other work [pathbased].
@@ -62,14 +62,14 @@ Machine learning approaches are rapidly adopted in many different areas, includi
 
 Modeling AST directly can be not the best approach for representing a function. A group of approaches that adopt a path-based representation of ASTs exist [pathbased]. They evaluated such representation on a different languages, such as python, javascript, java, and a set of different tasks, including function name prediction, type inference, variable name prediction. The approach was successful and was able to achieve better results than [Nice2predict], according to authors' claim. In their experiments, they determine the importance of path-based representations for solving aforementioned tasks, as compared with simple baselines and hand-crafted rules. We would like to perform similar comparison of the impact of different representation of source code elements on the capability of machine learning model to solve a useful task using these representations.
 
-Some approaches turned to graph representation of source code. [Allamanis] studied graph-based representation of C\# source codes. This graph included such information as inheritance, definitions, variable uses, and typical data flow information that can be extracted from AST. They used this graph and Gated Graph Neural Networks to solve such tasks as variable misuse detection and variable naming suggestion. Another method that adopted graph representation for source code was presented in [Deep Learning On Code with an Unbounded Vocabulary]. They used information from AST and additional information about inter-project dependencies of functions and variables in the source code. Their method focused on solving variable name suggestion. These two works combine AST of a function with inter-project information, but they do not study the impact of different elements of representation on the final outcome. 
+Some approaches turned to a graph representation of source code. [Allamanis] studied the graph-based representation of C\# source codes. This graph included such information as inheritance, definitions, variable uses, and typical data flow information that can be extracted from AST. They used this graph and Gated Graph Neural Networks to solve such tasks as variable misuse detection and variable naming suggestion. Another method that adopted graph representation for source code was presented in [Deep Learning On Code with an Unbounded Vocabulary]. They used information from AST and additional information about inter-project dependencies of functions and variables in the source code. Their method focused on solving variable name suggestion. These two works combine AST of a function with inter-project information, but they do not study the impact of different elements of representation on the final outcome. 
 
 There are other works that adopt graph representation for source code [all of them]. However, often they rely on the information from intermediate representation, such as representation of LLVM compiler. Such representations are available only for a handful of programming languages and, in general, less interpretable. Our goal is to determine the importance of different types of information that is already available in source code for inferring source code properties. For this reason we will not go into depth describing these additional approaches. 
 
 
 \section{\uppercase{Training Data Description}}
 
-In this work, we represent the source code with a graph. We used Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions. 
+In this work, we represent the source code with a graph. We used the Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions. 
 
 The entire package collection presents a graph with different type of nodes and edges. The type count for nodes and edges is given in the tables \ref{tbl:python_node_count} and \ref{tbl:python_edge_count}. 
 
@@ -121,10 +121,10 @@ We use Graph Attention Network to learn representations for different nodes in t
 % Masked model like GPT
 % These tasks are learned by separate models
 % Multitask on embeddings
-% We can train context free embeddings, and evaluate, but we can also evaluate on graph embeddings that consider the context as well.
+% We can train context-free embeddings, and evaluate, but we can also evaluate on graph embeddings that consider the context as well.
 
 \textbf{Function Call prediction}
-The call link prediction task tries to predict the presence of the links in the call graph. Function call graph constitutes the majority of our graph, This task is used to evaluate the ability of graph representation to generalize. Otherwise we should assume that the call dependencies are very hard to infer only from the information available in the [current] graph. 
+The call link prediction task tries to predict the presence of the links in the call graph. The function call graph constitutes the majority of our graph, This task is used to evaluate the ability of graph representation to generalize. Otherwise we should assume that the call dependencies are very hard to infer only from the information available in the [current] graph. 
 
 \textbf{Type use prediction}
 % The type use prediction 
@@ -141,7 +141,7 @@ The variable use prediction task tries to figure out whether the information abo
 The objective of call API sequence prediction is to tell whether two given functions tail each other when called inside another function. In other words, whether the given source code graph allows to determine that two functions (likely from different libraries) are used in a certain order in similar context.
 
 % \textbf{Node type classification}
-All of the problems described above can be interpreted in term of the task of link prediction on graphs. To evaluate these tasks we are going to apply existing methods for link prediction. 
+All of the problems described above can be interpreted in terms of the task of link prediction on graphs. To evaluate these tasks we are going to apply existing methods for link prediction. 
 
 \section{\uppercase{Training Procedure}}
 
