@@ -1,0 +1,197 @@
+\documentclass[a4paper,twoside]{article}
+
+\usepackage{epsfig}
+\usepackage{subcaption}
+\usepackage{calc}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage{pslatex}
+\usepackage{hyperref}
+\usepackage{apalike}
+\usepackage{url}
+\usepackage{SCITEPRESS}     % Please add other packages that you may need BEFORE the SCITEPRESS.sty package.
+
+
+\begin{document}
+
+\title{Evaluating early results in XXX}
+
+\author{\authorname{Vladimir Ivanov\orcidAuthor{0000-000x-xxxx-xxxx}, Vitaly Romanov\orcidAuthor{0000-000x-xxxx-xxxx}, Giancarlo Succi\orcidAuthor{0000-0001-8847-0186}
+}
+\affiliation{\sup{1}Innopolis University, Russia}
+\email{\{f.last\}@innopolis.ru}
+}
+
+\keywords{}
+
+\abstract{
+\href{https://github.com/VitalyRomanov/method-embedding}{Github} | 
+\href{https://docs.google.com/document/d/1Xwn7RWtS1ORKu3fVV2NgVS7aHwsULMlYpalR0RiVq6Q/edit#heading=h.ajuwnh29h0tg}{Google Doc}
+}
+
+\onecolumn \maketitle \normalsize \setcounter{footnote}{0} \vfill
+
+\section{\uppercase{Introduction}}
+% \noindent 
+Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve useful tasks on the source code. One of the noteworthy applications of modeling source code is the source code search. In this application a user can find a relevant code snippet using a natural language query, and such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function. We want to study how relevant is the information that can be extracted from source code beyond the function body. 
+
+Source code contains rich information about a particular function. Notably, a lot of information is present on the package and inter-project levels. A package contain the information about contextual similarity of functions. The functions that are implemented in the same package are likely to have related purpose. The information about how particular functions are used in different projects can tell us which packages are often used together, what are the common combinations of functions used in different projects. On these levels of abstractions one does not concern with the particular way the function is implemented and can learn useful insights about function's purpose simply from observing the way it is used. This level of abstraction can potentially facilitate a better source code search. 
+
+The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, package dependencies, variable usage, inheritance dependencies, and others. Graph representation is an additional approach to represent the source code besides abstract syntax trees (ASTs), and this method of representation is subject to evaluation. In this work we aim at evaluating what kind of information can be inferred from high-level inter project representation of the source code. We purposefully do not consider the AST representations as their study was addressed in other work [pathbased].
+
+There are several papers that attempted to evaluate what a model can learn given a particular representation. [Pathbased] used AST to assess what information can be inferred about a function. [Allamanis] used graph representation that rely on both package level information and AST to find bugs. [Defreez] used procedural flow graph to find similar functions inside Linux kernel source code base. [Nice2predict] used information about AST to predict variable names and types within a function. We contrast ourselves from these works in a way that we do not consider information about the AST of the function and only extract partial information from the function's body for evaluation. 
+
+Our contribution is the following
+\begin{itemize}
+    \item We introduce a dataset that contains inter-project information about source code in the form of graph;
+    \item We propose an approach to create embeddings for code elements for a given graph;
+    \item We provide the analysis of what kind of information about source code can be inferred from these representations using such tasks as name prediction, type prediction, graph link prediction, variable name usage prediction.
+\end{itemize}
+
+The rest of the paper is organized as follows.
+
+\section{\uppercase{Related Work}}
+
+Machine learning approaches are rapidly adopted in many different areas, including solving tasks on source code. One can view such tasks as bug detection [link] and API search [link] as ones of the most practical applications for source code analysis. Other applications include type prediction, class name prediction, variable name prediction. function name prediction, program classification, program summarization and other.  However, there is still work to be done in understanding what machine learning approaches can and cannot model. Some work was already done in this direction. 
+
+[Nice2predict] represents a program int the form of XXX. They try to predict such properties of a program as variable names and type annotations for variables. The approach was highly successful as their method was able to annotate the names of the variables by only analyzing the program structure. The input of the analyzer - a separate function. This gives an insight into what king of information can be inferred from a function AST.
+
+Modeling AST directly can be not the best approach for representing a function. A group of approaches that adopt a path-based representation of ASTs exist [pathbased]. They evaluated such representation on a different languages, such as python, javascript, java, and a set of different tasks, including function name prediction, type inference, variable name prediction. The approach was successful and was able to achieve better results than [Nice2predict], according to authors' claim. In their experiments, they determine the importance of path-based representations for solving aforementioned tasks, as compared with simple baselines and hand-crafted rules. We would like to perform similar comparison of the impact of different representation of source code elements on the capability of machine learning model to solve a useful task using these representations.
+
+Some approaches turned to graph representation of source code. [Allamanis] studied graph-based representation of C\# source codes. This graph included such information as inheritance, definitions, variable uses, and typical data flow information that can be extracted from AST. They used this graph and Gated Graph Neural Networks to solve such tasks as variable misuse detection and variable naming suggestion. Another method that adopted graph representation for source code was presented in [Deep Learning On Code with an Unbounded Vocabulary]. They used information from AST and additional information about inter-project dependencies of functions and variables in the source code. Their method focused on solving variable name suggestion. These two works combine AST of a function with inter-project information, but they do not study the impact of different elements of representation on the final outcome. 
+
+There are other works that adopt graph representation for source code [all of them]. However, often they rely on the information from intermediate representation, such as representation of LLVM compiler. Such representations are available only for a handful of programming languages and, in general, less interpretable. Our goal is to determine the importance of different types of information that is already available in source code for inferring source code properties. For this reason we will not go into depth describing these additional approaches. 
+
+
+\section{\uppercase{Training Data Description}}
+
+In this work, we represent the source code with a graph. We used Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions. 
+
+The entire package collection presents a graph with different type of nodes and edges. The type count for nodes and edges is given in the tables \ref{tbl:python_node_count} and \ref{tbl:python_edge_count}. 
+
+The target graph does not contain any information about function bodies, except the function call graph.
+
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|l|}
+ \hline
+Node Type        & Count  \\ \hline
+Function        & 221822 \\ \hline
+Class field     & 83077 \\ \hline
+Class           & 35798 \\ \hline
+Module          & 18097 \\ \hline
+Class method    & 14953 \\ \hline
+Non-indexed symbol  & 853  \\ \hline
+\end{tabular}
+\caption{Node types present in Python source graph \label{tbl:python_node_count}}
+\end{table}
+
+\begin{table}[]
+\centering
+\begin{tabular}{|l|l|}
+\hline
+Edge Type       & Count \\ \hline
+Call            & 614621 \\ \hline
+Define/Contain  & 431115 \\ \hline
+Type use        & 239543 \\ \hline
+Import          & 121752 \\ \hline
+Inherit         & 26525 \\ \hline
+\end{tabular}
+\caption{Edge count in Python graph by edge type \label{tbl:python_edge_count}}
+\end{table}
+
+\section{\uppercase{Evaluation}}
+
+We use Graph Attention Network to learn representations for different nodes in the graph and learn the classification problem that corresponds to some specific tasks. 
+% The list of tasks include:
+% \begin{itemize}
+%     \item Call link prediction
+%     \item Type use prediction
+%     \item Function name prediction
+%     \item Variable use prediction
+%     \item Call API sequence prediction
+%     \item Node type classification
+% \end{itemize}
+
+% We learn embeddings and evaluate on these tasks. We check whether these embeddings are useful or not. We check whether we can further use these embeddings. If the results are not good - we cannot use these embeddings.  
+% Masked model like GPT
+% These tasks are learned by separate models
+% Multitask on embeddings
+% We can train context free embeddings, and evaluate, but we can also evaluate on graph embeddings that consider the context as well.
+
+\textbf{Function Call prediction}
+The call link prediction task tries to predict the presence of the links in the call graph. Function call graph constitutes the majority of our graph, This task is used to evaluate the ability of graph representation to generalize. Otherwise we should assume that the call dependencies are very hard to infer only from the information available in the [current] graph. 
+
+\textbf{Type use prediction}
+% The type use prediction 
+In this task a model tries to predict whether a type is used somewhere inside a given function. Since we are working with Python, such predictions are very hard to make deterministically, and a programmer can benefit from these type suggestions. 
+
+% This task is often used, but, honestly, it should not produce good results. 
+\textbf{Function name prediction}
+The function name prediction is a task that evaluates the ability of the model to capture the purpose of the function. This task was used in many previous works. However, such prediction was usually done with the help of function's AST. Here, we are going to see whether higher-level information about the source code can be used for name prediction. 
+
+\textbf{Variable use prediction}
+The variable use prediction task tries to figure out whether the information about the names of the variables, that are used inside the function can be inferred from merely learning how a function is used, without looking at its implementation.
+
+\textbf{Call API sequence prediction}
+The objective of call API sequence prediction is to tell whether two given functions tail each other when called inside another function. In other words, whether the given source code graph allows to determine that two functions (likely from different libraries) are used in a certain order in similar context.
+
+% \textbf{Node type classification}
+All of the problems described above can be interpreted in term of the task of link prediction on graphs. To evaluate these tasks we are going to apply existing methods for link prediction. 
+
+\section{\uppercase{Training Procedure}}
+
+The goal of the training procedure is to learn useful embeddings for graph nodes. We train embeddings while learning how classify graph nodes. The list of classes is given in table \ref{tbl:python_node_count}.
+
+We study embeddings produced by two different models: Graph Attention Network and Relational Graph Convolutional Network. The first model is trained on a homogeneous graph. It has only information about the connections between vertices. Thus, this model can identify the node type only from its structural properties. The second model is aware of connection types, and can use this knowledge to infer the node type.
+
+The task of link prediction requires training additional models. We allocate 10\% of the connections for training and testing link prediction models.
+
+\section{\uppercase{Model Description}}
+
+Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passes over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is used for node classification task. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
+
+\textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
+
+$$
+h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
+$$
+
+\textbf{Relational Graph Convolutional Network} allows modeling heterogeneous graphs with different relation types. In this variant, there is a dedicated set of weights for each type of connection. 
+$$
+h_i^{(l+1)} = \sigma\left(\sum_{r\in \mathcal{R}}
+\sum_{j\in\mathcal{N}_r(i)}W_r^{(l)}h_j^{(l)}\right)
+$$
+
+
+
+
+
+\section{\uppercase{Results}}
+
+\begin{table*}[]
+\centering
+\label{tbl:results}
+\caption{Results of link prediction}
+\begin{tabular}{lllllll}
+model   & call & call seq & type use & node type & variable use & function name \\ \hline
+gat l1  &      &          &          &           &              &               \\
+gat l2  &      &          &          &           &              &               \\
+gat l3  &      &          &          &           &              &               \\
+rgcn l1 &      &          &          &           &              &               \\
+rgcn l2 &      &          &          &           &              &               \\
+rgcn l3 &      &          &          &           &              &              
+\end{tabular}
+\end{table*}
+
+
+\bibliographystyle{apalike}
+{\small
+\bibliography{Splash2020.Vitaly}}
+
+\end{document}
+
