@@ -41,13 +41,13 @@ Source code can be considered as a form of natural language. Lately we see the r
  
 Source code contains rich information about a particular function. Notably, a lot of information is present on the package and inter-project levels. A package contain the information about contextual similarity of functions. The functions that are implemented in the same package are likely to have related purpose. The information about how particular functions are used in different projects can tell us which packages are often used together, what are the common combinations of functions used in different projects. On these levels of abstractions one does not concern with the particular way the function is implemented and can learn useful insights about function's purpose simply from observing the way it is used. This level of abstraction can potentially facilitate a better source code search. 
 
-The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, package dependencies, variable usage, inheritance dependencies, and others. Graph representation is an additional approach to represent the source code besides abstract syntax trees (ASTs), and this method of representation is subject to evaluation. In this work we aim at evaluating what kind of information can be inferred from high-level inter project representation of the source code. We purposefully do not consider the AST representations as their study was addressed in other work [pathbased].
+The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, package dependencies, variable usage, inheritance dependencies, and others. Graph representation is an additional approach to represent the source code besides abstract syntax trees (ASTs), and this method of representation is subject to evaluation. In this work we aim at evaluating what kind of information can be inferred from high-level inter-project representation of the source code. We purposefully do not consider the AST representations as their study was addressed in other work [pathbased].
 
-There are several papers that attempted to evaluate what a model can learn given a particular representation. [Pathbased] used AST to assess what information can be inferred about a function. [Allamanis] used graph representation that rely on both package level information and AST to find bugs. [Defreez] used procedural flow graph to find similar functions inside Linux kernel source code base. [Nice2predict] used information about AST to predict variable names and types within a function. We contrast ourselves from these works in a way that we do not consider information about the AST of the function and only extract partial information from the function's body for evaluation. 
+There are several papers that attempted to evaluate what a model can learn given a particular representation. [Pathbased] used AST to assess what information can be inferred about a function. [Allamanis] used graph representation that rely on both package-level information and AST to find bugs. [Defreez] used a procedural flow graph to find similar functions inside the Linux kernel source code base. [Nice2predict] used information about AST to predict variable names and types within a function. We contrast ourselves from these works in a way that we do not consider information about the AST of the function and only extract partial information from the function's body for evaluation. 
 
 Our contribution is the following
 \begin{itemize}
-    \item We introduce a dataset that contains inter-project information about source code in the form of graph;
+    \item We introduce a dataset that contains inter-project information about source code in the form of a graph;
     \item We propose an approach to create embeddings for code elements for a given graph;
     \item We provide the analysis of what kind of information about source code can be inferred from these representations using such tasks as name prediction, type prediction, graph link prediction, variable name usage prediction.
 \end{itemize}
@@ -65,6 +65,24 @@ Modeling AST directly can be not the best approach for representing a function. 
 Some approaches turned to a graph representation of source code. [Allamanis] studied the graph-based representation of C\# source codes. This graph included such information as inheritance, definitions, variable uses, and typical data flow information that can be extracted from AST. They used this graph and Gated Graph Neural Networks to solve such tasks as variable misuse detection and variable naming suggestion. Another method that adopted graph representation for source code was presented in [Deep Learning On Code with an Unbounded Vocabulary]. They used information from AST and additional information about inter-project dependencies of functions and variables in the source code. Their method focused on solving variable name suggestion. These two works combine AST of a function with inter-project information, but they do not study the impact of different elements of representation on the final outcome. 
 
 There are other works that adopt graph representation for source code [all of them]. However, often they rely on the information from intermediate representation, such as representation of LLVM compiler. Such representations are available only for a handful of programming languages and, in general, less interpretable. Our goal is to determine the importance of different types of information that is already available in source code for inferring source code properties. For this reason we will not go into depth describing these additional approaches. 
+
+\section{\uppercase{Task Description}}
+
+\section{\uppercase{Model Description}}
+
+Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passes over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is used for node classification task. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
+
+\textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
+
+$$
+h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
+$$
+
+\textbf{Relational Graph Convolutional Network} allows modeling heterogeneous graphs with different relation types. In this variant, there is a dedicated set of weights for each type of connection. 
+$$
+h_i^{(l+1)} = \sigma\left(\sum_{r\in \mathcal{R}}
+\sum_{j\in\mathcal{N}_r(i)}W_r^{(l)}h_j^{(l)}\right)
+$$
 
 
 \section{\uppercase{Training Data Description}}
@@ -104,45 +122,6 @@ Inherit         & 26525 \\ \hline
 \caption{Edge count in Python graph by edge type \label{tbl:python_edge_count}}
 \end{table}
 
-\section{\uppercase{Evaluation}}
-
-We use Graph Attention Network to learn representations for different nodes in the graph and learn the classification problem that corresponds to some specific tasks. 
-% The list of tasks include:
-% \begin{itemize}
-%     \item Call link prediction
-%     \item Type use prediction
-%     \item Function name prediction
-%     \item Variable use prediction
-%     \item Call API sequence prediction
-%     \item Node type classification
-% \end{itemize}
-
-% We learn embeddings and evaluate on these tasks. We check whether these embeddings are useful or not. We check whether we can further use these embeddings. If the results are not good - we cannot use these embeddings.  
-% Masked model like GPT
-% These tasks are learned by separate models
-% Multitask on embeddings
-% We can train context-free embeddings, and evaluate, but we can also evaluate on graph embeddings that consider the context as well.
-
-\textbf{Function Call prediction}
-The call link prediction task tries to predict the presence of the links in the call graph. The function call graph constitutes the majority of our graph, This task is used to evaluate the ability of graph representation to generalize. Otherwise we should assume that the call dependencies are very hard to infer only from the information available in the [current] graph. 
-
-\textbf{Type use prediction}
-% The type use prediction 
-In this task a model tries to predict whether a type is used somewhere inside a given function. Since we are working with Python, such predictions are very hard to make deterministically, and a programmer can benefit from these type suggestions. 
-
-% This task is often used, but, honestly, it should not produce good results. 
-\textbf{Function name prediction}
-The function name prediction is a task that evaluates the ability of the model to capture the purpose of the function. This task was used in many previous works. However, such prediction was usually done with the help of function's AST. Here, we are going to see whether higher-level information about the source code can be used for name prediction. 
-
-\textbf{Variable use prediction}
-The variable use prediction task tries to figure out whether the information about the names of the variables, that are used inside the function can be inferred from merely learning how a function is used, without looking at its implementation.
-
-\textbf{Call API sequence prediction}
-The objective of call API sequence prediction is to tell whether two given functions tail each other when called inside another function. In other words, whether the given source code graph allows to determine that two functions (likely from different libraries) are used in a certain order in similar context.
-
-% \textbf{Node type classification}
-All of the problems described above can be interpreted in terms of the task of link prediction on graphs. To evaluate these tasks we are going to apply existing methods for link prediction. 
-
 \section{\uppercase{Training Procedure}}
 
 The goal of the training procedure is to learn useful embeddings for graph nodes. We train embeddings while learning how classify graph nodes. The list of classes is given in table \ref{tbl:python_node_count}.
@@ -151,21 +130,136 @@ We study embeddings produced by two different models: Graph Attention Network an
 
 The task of link prediction requires training additional models. We allocate 10\% of the connections for training and testing link prediction models.
 
-\section{\uppercase{Model Description}}
+\subsection{Preparing the graph}
+The graph is prepared in the following way:
+\begin{enumerate}
+    \item Edges are split into the train set and holdout set. Holdout set is used in future experiments. Without a holdout set the results of the future experiments may be biased. After removing holdout edges from the main graph, the disconnected nodes are filtered, so that the graph remains connected.
+    \item Since training objectives will be defined on the node embeddings, the nodes are split into train, test, and validation sets. The test set should be used in the future experiments for training. Validation and test sets are equal in size and constitute 40% of all nodes.
+\end{enumerate}
 
-Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passes over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is used for node classification task. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
+Some notes about the operational mode should be taken. 
+\begin{enumerate}
+    \item There is support for heterogeneous graphs with node and edge types. Where these types are used during training is controlled by flags node_types and node_types. If no types are used, a simple GAT is created. GAT model currently does not support types at all. If either node types or edge types are incorporated, an RGCN model is created. 
+    \item There is a plan to extend the support for different graph models. Specifically, support for  GAT RGCN and GGNN are needed. 
+    \item Graphs require contiguous indexing of nodes. For this reason additional mapping is created that tracks the relationship between the new graph id and the original node id from the training data.
+\end{enumerate}
 
-\textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
+\subsection{Training models}
 
-$$
-h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
-$$
+Several objectives are explored for training 
+\begin{enumerate}
+    \item Node classification
+    This objective tries to predict node types, and assumes that they are excluded from the graph. In general, other classification targets can be used. The main limitation is the limited number of target classes, since the classification is performed using a fully connected layer. Currently, this task is used to predict node types. 
+    \item Vector similarity
+    This objective can be used to train models,where the number of target classes is very large. Several target classes are possible. The classification task is implemented using negative sampling and logistic classifier. The model creates embeddings for the target objectives, simulating their presence in the graph. The objective is to predict whether there is a connection between the graph node and one of the target nodes. This is done using a SkipGram negative sampling procedure. The number of negative samples per node is 3. The samples are drawn from the noise distribution. Currently uniform and raised unigram noise distributions are implemented. Currently, this procedure is used to predict node names (as given by the programming language. 
+    \item Vector similarity with classifier
+    The idea for this approach is similar to the one described above. The target is to predict the presence of an edge between two nodes: a graph node, and a label node. In contrast with the procedure described above, where SGNS was used, here the decision whether two nodes are connected is performed by concatenating the embeddings for these two nodes, and performing a binary classification with a small neural network. It is important to note, that in this procedure, the target is always assumed to be not a part of the original graph. This objective was used to predict function names and variable names, used inside functions.
+    \item Predicting edges between graph nodes
+    In this training mode, the general idea is the same as for the one above. The objective is to predict the presence of an edge between two nodes. Both nodes are a part of the main graph. The edges that the objective tries to predict - are not present in the main graph. This objective was used to predict next_call edges.
+\end{enumerate}
 
-\textbf{Relational Graph Convolutional Network} allows modeling heterogeneous graphs with different relation types. In this variant, there is a dedicated set of weights for each type of connection. 
-$$
-h_i^{(l+1)} = \sigma\left(\sum_{r\in \mathcal{R}}
-\sum_{j\in\mathcal{N}_r(i)}W_r^{(l)}h_j^{(l)}\right)
-$$
+\subsection{Train Test Splitting Policy}
+
+For the sake of training, the data is split into three parts: train, validation and test sets. The objective functions take the embedding of a node in the graph and apply some transformation to this embedding. For this reason, the data split is performed based on the nodes (not the edges). Only those edges are allowed in the train set, which have the source node id listed in the train set. There can be multiple destinations for the same source node. The destinations are randomly sampled during training. 
+There should be no (significant) leak of training signals from the train to the test set. The src nodes appear either in train or in test set. If node A is from the train set, node B is from the test set, and C is a common target, then edge A->C is used for training, B->C used for testing. But in future experiments embedding for C is trained from scratch, so there should be no leak.
+
+\section{\uppercase{Description of experiments}}
+
+All of the experiments listed below share a few preprocessing steps. The goal of the experiments is to study the transferability of the learned embeddings to a task, different to the one the model was trained on. To achieve this, we make use of the train test split generated in the process of training our GNN network. We use nodes listed in the test set to train additional classifier that tries to predict the existence of edges between nodes. The type of predicted edges depend on the experiment. 
+For the sake of training and testing additional classifier, edges are split into train and test sets. The split is performed on the basis of the src nodes. We use src nodes because they are always taken from the original graph, where as dst nodes can represent nodes that were not present in the original graph. We split src nodes into train and test sets and use some src nodes only for training, and some - only for testing. During all of the experiments, the embeddings for the nodes of the original graph stay fixed. Training procedure updates the parameters of the binary classifier, and, if such nodes are present, the parameters of the foreign dst nodes. 
+In all experiments, only positive edges are present. The negative edges are sampled dynamically during training. Since the pool of src nodes is fixed (either by train and test sets), we sample dst nodes. We explored two negative sampling procedures. The first samples dst nodes uniformy. The second, samples dst nodes from the noise distribution, defined by scaled unigram distribution. The same noise distribution was used in Word2Vec.
+
+\begin{enumerate}
+    \item Call link prediction
+    In this experiment, the task is to predict the existence of call edges between two nodes. Training data is taken from the holdout set that contains edges that were not used during training. The list of holdout edges is filtered to leave only function calls. Edges are not filtered additionally because there are too few of them. And this is truly not necessary.
+    \item Next function
+    In this experiment, the task is to predict the edge A->B that shows that the function B will be called after the function A. The training data for this task is collected separately. These edges are not part of the graph, however can be used as a GNN training objective. These edges are subject to filtering after loaded. Only those edges remain that have src node present in the test set. 
+    \item Type use
+    The edges for type use are taken from the holdout edges. The rest of the procedure is similar to the tasks described above. 
+    \item Variable usage
+    The goal of this task is to predict variable names that were used inside a given function. Filtering procedure is similar to the one in other experiments above. The variable name usage edges are not present in the original graph and are extracted separately from function bodies.
+    \item Function name
+    This tasks predicts the name of the given node. 
+    \item Node type
+    In this procedure, a simple node embedding classifier is applied. This procedure does not require to predict interaction between two nodes and needs only one node embedding as an input. In general, any types of labels can be used. We use the types of nodes as a label.
+\end{enumerate}
+
+For the summary of experiments and what is trained see table \ref{tbl:experiment_desc}.
+
+\begin{table*}[H]
+    \centering
+    \caption{Description of experiments and what is trained \label{tbl:experiment_desc}}
+    \begin{tabular}{|p{3cm}|p{6cm}|p{6cm}|}
+    \hline
+        \textbf{Experiment} & \textbf{Model description} & \textbf{What is trained} \\ \hline
+        Next function, call, type use & Both nodes are from the original graph. Node embeddings are concatenated and classified & Binary classifier that predicts the the presence of edge between nodes \\ \hline
+        Function name, variable names & Src node from the original graph, dst node is new. Node embeddings are concatenated and classified & Binary classifier that predicts the presence of edge between nodes. Embeddings for dst noes. \\ \hline
+        Node type & Node is classified into a relatively small number of classes. Node embedding taken from the original graph. & Node classifier \\ \hline
+    \end{tabular}
+\end{table*}
+
+\subsection{Splitting on nodes or edges}
+
+There are two ways to handle training data for the experiment. Most of the experiments can be seen as binary classification problem, that makes a decision whether an edge between two nodes exist. In these experiments src nodes are always a part of the original graph, and dst nodes sometimes can be some new nodes. The training data is given as a list of edges. There are two approaches to split this data into train and test set. The first, and the most evident approach, is to split edges into two groups. The second approach is to split the edges based on their src node. That is, use the edges with some src nodes only to train test, and the rest - in test set. 
+We argue that the second approach can give more information to the classifier about how to interpret the embeddings of the nodes from the original graph. When the edges are simply split into two groups, the some edges that share a common src node can appear in both train and test splits. This way, the classifier can struggle to predict some of the edges, because only the partial knowledge was present in the training set. However, when the split is performed on the basis of src nodes, the classifier has the opportunity to see how a node with a given embedding is connected to other nodes, and learn how to extract useful information from this embedding. 
+
+\subsection{The need for multiple splits}
+
+A natural question is why all of these complicated data splits necessary. In this work we are using a GNN model to train node embeddings. These models implement message passing procedure. For this reason, GNN models are sometimes considered as semi-supervised. All the data is present in the same graph, and training signals naturally affect even unlabeled nodes. For this reason it is hard to make conclusions about the transferability of the learned embeddings. Moreover, the real datasets are rarely complete. By introducing several data splits and holdout sets we emulate the data incompleteness. This way we can show that even when trained on incomplete graph, the node embeddings can still be useful.
+
+\subsection{The choice of negative sampling strategy}
+
+Distribution and parameter
+
+\subsection{Evaluation approaches}
+
+We have two types of models. THe first type is used for node classification and has a very small number of target classes. We use accuracy to evaluate the quality of such models. The second type of model tries to decide whether there is an edge between two nodes. In essence, this model solves a binary classification problem. In order to evaluate this model, we take all the positive edges in the test split, and generate an equal amount of the negative edges. The equal proportion of the edges hints that the random baseline for accuracy should be around 0.5. However, this baseline is not relevant in our case for a couple of reasons. First, our goal is to evaluate embeddings. When we train a classifier, it will fit to the current embeddings. Because the target nodes are shared between training and testing edges, it is likely to see the accuracy above 0.5 after fitting the classifier. Second, our negative edges are randomly generated. There is a slight possibility that the generated edge is a good candidate to be a positive edge. To account for this, we conduct the same experiments with node embeddings randomly initialized, and use the resulting score as the random baseline.
+For models that have a large amount of target labels, it makes sense to use ranking measures.  
+
+\section{\uppercase{Experimental Results}}
+
+?
+
+% \section{\uppercase{Evaluation}}
+
+% We use Graph Attention Network to learn representations for different nodes in the graph and learn the classification problem that corresponds to some specific tasks. 
+% % The list of tasks include:
+% % \begin{itemize}
+% %     \item Call link prediction
+% %     \item Type use prediction
+% %     \item Function name prediction
+% %     \item Variable use prediction
+% %     \item Call API sequence prediction
+% %     \item Node type classification
+% % \end{itemize}
+
+% % We learn embeddings and evaluate on these tasks. We check whether these embeddings are useful or not. We check whether we can further use these embeddings. If the results are not good - we cannot use these embeddings.  
+% % Masked model like GPT
+% % These tasks are learned by separate models
+% % Multitask on embeddings
+% % We can train context-free embeddings, and evaluate, but we can also evaluate on graph embeddings that consider the context as well.
+
+% \textbf{Function Call prediction}
+% The call link prediction task tries to predict the presence of the links in the call graph. The function call graph constitutes the majority of our graph, This task is used to evaluate the ability of graph representation to generalize. Otherwise we should assume that the call dependencies are very hard to infer only from the information available in the [current] graph. 
+
+% \textbf{Type use prediction}
+% % The type use prediction 
+% In this task a model tries to predict whether a type is used somewhere inside a given function. Since we are working with Python, such predictions are very hard to make deterministically, and a programmer can benefit from these type suggestions. 
+
+% % This task is often used, but, honestly, it should not produce good results. 
+% \textbf{Function name prediction}
+% The function name prediction is a task that evaluates the ability of the model to capture the purpose of the function. This task was used in many previous works. However, such prediction was usually done with the help of function's AST. Here, we are going to see whether higher-level information about the source code can be used for name prediction. 
+
+% \textbf{Variable use prediction}
+% The variable use prediction task tries to figure out whether the information about the names of the variables, that are used inside the function can be inferred from merely learning how a function is used, without looking at its implementation.
+
+% \textbf{Call API sequence prediction}
+% The objective of call API sequence prediction is to tell whether two given functions tail each other when called inside another function. In other words, whether the given source code graph allows to determine that two functions (likely from different libraries) are used in a certain order in similar context.
+
+% % \textbf{Node type classification}
+% All of the problems described above can be interpreted in terms of the task of link prediction on graphs. To evaluate these tasks we are going to apply existing methods for link prediction. 
+
+
 
 
 
