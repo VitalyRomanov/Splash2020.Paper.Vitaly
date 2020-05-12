@@ -29,27 +29,26 @@
 \keywords{}
 
 \abstract{
-\href{https://github.com/VitalyRomanov/method-embedding}{Github} | 
-\href{https://docs.google.com/document/d/1Xwn7RWtS1ORKu3fVV2NgVS7aHwsULMlYpalR0RiVq6Q/edit#heading=h.ajuwnh29h0tg}{Google Doc}
+% \href{https://github.com/VitalyRomanov/method-embedding}{Github} | 
+% \href{https://docs.google.com/document/d/1Xwn7RWtS1ORKu3fVV2NgVS7aHwsULMlYpalR0RiVq6Q/edit#heading=h.ajuwnh29h0tg}{Google Doc}
 }
 
 \onecolumn \maketitle \normalsize \setcounter{footnote}{0} \vfill
 
 \section{\uppercase{Introduction}}
 % \noindent 
-Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve useful tasks on the source code. One of the noteworthy applications of modeling source code is the source code search. In this application a user can find a relevant code snippet using a natural language query, and such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function. We want to study how relevant is the information that can be extracted from source code beyond the function body. 
+Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve machine learning tasks for source code. One of the noteworthy applications of modeling source code is the source code search. In this application a user can find a relevant code snippet using a natural language query. Such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function, which, in most cases, is sufficient to understand the purpose of this function. However, learning algorithms still struggle to process sequences of actions that are common in source code. At the same time, current approaches proved to be quite successful in capturing co-occurrence statistics. For source code, such statistics can be extracted from global usage patterns on a package or inter-project levels. Our goal is to study how useful this global information is by posing this goal as evaluation of a machine learning problem on graphs.
  
-Source code contains rich information about a particular function. Notably, a lot of information is present on the package and inter-project levels. A package contain the information about contextual similarity of functions. The functions that are implemented in the same package are likely to have related purpose. The information about how particular functions are used in different projects can tell us which packages are often used together, what are the common combinations of functions used in different projects. On these levels of abstractions one does not concern with the particular way the function is implemented and can learn useful insights about function's purpose simply from observing the way it is used. This level of abstraction can potentially facilitate a better source code search. 
+Source code describes the relationships between source code objects (SCOs), such as modules, functions, classes, variables, etc. Some information about these SCOs can be inferred from the package and inter-project level dependencies. A package contain the information about the contextual similarity. The SCOs that are implemented in the same package are likely to have related purpose. The information about how particular SCOs are used in different projects can tell us which packages are often used together, and what are the common combinations of SCOs to be used together in different projects. On these levels of abstraction, one does not concern with the particular way an SCO is implemented and can learn useful insights about its purpose simply from observing the way it is used. 
+The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, import dependencies, variable usages, inheritance dependencies, and others. Because the relationships between SCOs are not constrained to the boundaries of particular functions, files, and even packages, such graph captures global relationships, and, therefore, is a global graph. Global graph representation is an alternative approach to represent the source code besides abstract syntax trees (ASTs). We evaluate the usefulness of this global representation for solving different machine learning problems for source code. In this work, we aim at evaluating what kind of information can be inferred from high-level inter-project global relationships between SCOs. We purposefully do not consider the ASTs as their study was addressed in other works \cite{Alon2018}, \cite{Yahav2018}.
 
-The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, package dependencies, variable usage, inheritance dependencies, and others. Graph representation is an additional approach to represent the source code besides abstract syntax trees (ASTs), and this method of representation is subject to evaluation. In this work we aim at evaluating what kind of information can be inferred from high-level inter-project representation of the source code. We purposefully do not consider the AST representations as their study was addressed in other work [pathbased].
-
-There are several papers that attempted to evaluate what a model can learn given a particular representation. [Pathbased] used AST to assess what information can be inferred about a function. [Allamanis] used graph representation that rely on both package-level information and AST to find bugs. [Defreez] used a procedural flow graph to find similar functions inside the Linux kernel source code base. [Nice2predict] used information about AST to predict variable names and types within a function. We contrast ourselves from these works in a way that we do not consider information about the AST of the function and only extract partial information from the function's body for evaluation. 
+There are several papers that investigated what a model can learn from a particular source code representation. \cite{Alon2018a} used AST paths to predict the names of functions. \cite{Allamanis2017} used graph representation that rely on both global relationships and ASTs to find bugs. \cite{DeFreez2018} used a inter-procedural flow graph to find similar functions inside the Linux kernel source code. \cite{Raychev2015} used information about AST to predict variable names and types within a function. In contrast to these works, we focus on using only the information about global relationships. 
 
 Our contribution is the following
 \begin{itemize}
-    \item We introduce a dataset that contains inter-project information about source code in the form of a graph;
-    \item We propose an approach to create embeddings for code elements for a given graph;
-    \item We provide the analysis of what kind of information about source code can be inferred from these representations using such tasks as name prediction, type prediction, graph link prediction, variable name usage prediction.
+    \item We introduce a source-graph-dataset for Python, that captures information about global relationships between over 100 packages;
+    \item We evaluate the usefulness of global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction;
+    \item We evaluate the usefulness of the embeddings pre-trained on the tasks listed above for solving other tasks, such as function call prediction, type use prediction, node type prediction.
 \end{itemize}
 
 The rest of the paper is organized as follows.
@@ -139,7 +138,7 @@ The graph is prepared in the following way:
 
 Some notes about the operational mode should be taken. 
 \begin{enumerate}
-    \item There is support for heterogeneous graphs with node and edge types. Where these types are used during training is controlled by flags node_types and node_types. If no types are used, a simple GAT is created. GAT model currently does not support types at all. If either node types or edge types are incorporated, an RGCN model is created. 
+    \item There is support for heterogeneous graphs with node and edge types. Where these types are used during training is controlled by flags node\_types and node\_types. If no types are used, a simple GAT is created. GAT model currently does not support types at all. If either node types or edge types are incorporated, an RGCN model is created. 
     \item There is a plan to extend the support for different graph models. Specifically, support for  GAT RGCN and GGNN are needed. 
     \item Graphs require contiguous indexing of nodes. For this reason additional mapping is created that tracks the relationship between the new graph id and the original node id from the training data.
 \end{enumerate}
@@ -155,7 +154,7 @@ Several objectives are explored for training
     \item Vector similarity with classifier
     The idea for this approach is similar to the one described above. The target is to predict the presence of an edge between two nodes: a graph node, and a label node. In contrast with the procedure described above, where SGNS was used, here the decision whether two nodes are connected is performed by concatenating the embeddings for these two nodes, and performing a binary classification with a small neural network. It is important to note, that in this procedure, the target is always assumed to be not a part of the original graph. This objective was used to predict function names and variable names, used inside functions.
     \item Predicting edges between graph nodes
-    In this training mode, the general idea is the same as for the one above. The objective is to predict the presence of an edge between two nodes. Both nodes are a part of the main graph. The edges that the objective tries to predict - are not present in the main graph. This objective was used to predict next_call edges.
+    In this training mode, the general idea is the same as for the one above. The objective is to predict the presence of an edge between two nodes. Both nodes are a part of the main graph. The edges that the objective tries to predict - are not present in the main graph. This objective was used to predict next\_call edges.
 \end{enumerate}
 
 \subsection{Train Test Splitting Policy}
@@ -186,7 +185,7 @@ In all experiments, only positive edges are present. The negative edges are samp
 
 For the summary of experiments and what is trained see table \ref{tbl:experiment_desc}.
 
-\begin{table*}[H]
+\begin{table*}
     \centering
     \caption{Description of experiments and what is trained \label{tbl:experiment_desc}}
     \begin{tabular}{|p{3cm}|p{6cm}|p{6cm}|}
@@ -218,7 +217,38 @@ For models that have a large amount of target labels, it makes sense to use rank
 
 \section{\uppercase{Experimental Results}}
 
-?
+\begin{table*}
+    \centering
+    \begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
+    \hline
+        **Target task (trained on)** & **Evaluation task (Using Last Layer of GNN)** & Result \\ \hline
+        Node type & For All (except node type) & Useless \\ \hline
+        Function Name "scores": \{    "loss": 0.2280,    "train\_acc": 0.9154,    "val\_acc": 0.6403,    "test\_acc": 0.6397  \} & FCG Link prediction & Random (1 neg smpl): 50 Emb (1 neg smpl): 57 \\ \hline
+         & API Seq Call & Random (1 neg smpl): 57Emb (1 neg smpl): 81 \\ \hline
+         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 80 \\ \hline
+         & FName & Random (1 neg smpl): 50Emb (1 neg smpl): 63 \\ \hline
+         & VarUse & Random (1 neg smpl): 62Emb (1 neg smpl): 74 \\ \hline
+         & Node Type & Random (1 neg smpl): 50Emb (1 neg smpl): 65 \\ \hline
+        Function Name W2V style "scores": \{    "loss": 0.21,    "train\_acc": 0.92,    "val\_acc": 0.65,    "test\_acc": 0.65  \} & FCG Link prediction &  \\ \hline
+         & API Seq Call &  \\ \hline
+         & Type Use &  \\ \hline
+         & FName &  \\ \hline
+         & VarUse &  \\ \hline
+         & Node Type &  \\ \hline
+        Next call "scores": \{     "loss": 0.12,    "train\_acc": 0.91,    "val\_acc": 0.90,    "test\_acc": 0.90  \}"scores": \{    "loss": 0.2509,    "train\_acc": 0.9029,    "val\_acc": 0.7817,    "test\_acc": 0.7820  \} & FCG Link prediction & Random (1 neg smpl): 50Emb (1 neg smpl): 68 \\ \hline
+         & API Seq Call & Random (1 neg smpl): 65Emb (1 neg smpl): 87 88 78 \\ \hline
+         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 60 \\ \hline
+         & FName & Random (1 neg smpl): 51Emb (1 neg smpl): 59 \\ \hline
+         & VarUse & Random (1 neg smpl): 61Emb (1 neg smpl): 74 \\ \hline
+         & Node Type & 50 \\ \hline
+        Variable names "scores": \{    "loss": 0.4836,    "train\_acc": 0.7425,    "val\_acc": 0.7262,    "test\_acc": 0.7216  \} & FCG Link prediction & Random (1 neg smpl): 61Emb (1 neg smpl): 74 \\ \hline
+         & API Seq Call & Random (1 neg smpl): 61Emb (1 neg smpl): 81 \\ \hline
+         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 63 \\ \hline
+         & FName & Random (1 neg smpl): 51Emb (1 neg smpl): 60 \\ \hline
+         & VarUse & Random (1 neg smpl): 62Emb (1 neg smpl): 74 \\ \hline
+         & Node Type & Random (1 neg smpl): 45Emb (1 neg smpl): 56 \\ \hline
+    \end{tabular}
+\end{table*}
 
 % \section{\uppercase{Evaluation}}
 
