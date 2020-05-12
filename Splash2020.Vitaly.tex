@@ -37,33 +37,44 @@
 
 \section{\uppercase{Introduction}}
 % \noindent 
-Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve machine learning tasks for source code. One of the noteworthy applications of modeling source code is the source code search. In this application a user can find a relevant code snippet using a natural language query. Such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function, which, in most cases, is sufficient to understand the purpose of this function. However, learning algorithms still struggle to process sequences of actions that are common in source code. At the same time, current approaches proved to be quite successful in capturing co-occurrence statistics. For source code, such statistics can be extracted from global usage patterns on a package or inter-project levels. Our goal is to study how useful this global information is by posing this goal as evaluation of a machine learning problem on graphs.
+Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve machine learning tasks for source code. One of the noteworthy applications of modeling source code is the source code search. In this application, a user can find a relevant code snippet using a natural language query. Such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function, which, in most cases, is sufficient to understand the purpose of this function. However, learning algorithms still struggle to process sequences of actions that are common in source code. At the same time, current approaches proved to be quite successful in capturing co-occurrence statistics. For source code, such statistics can be extracted from global usage patterns on a package or inter-project levels. Our goal is to study how useful this global information is by posing this goal as evaluation of a machine learning tasks on graphs.
  
-Source code describes the relationships between source code objects (SCOs), such as modules, functions, classes, variables, etc. Some information about these SCOs can be inferred from the package and inter-project level dependencies. A package contain the information about the contextual similarity. The SCOs that are implemented in the same package are likely to have related purpose. The information about how particular SCOs are used in different projects can tell us which packages are often used together, and what are the common combinations of SCOs to be used together in different projects. On these levels of abstraction, one does not concern with the particular way an SCO is implemented and can learn useful insights about its purpose simply from observing the way it is used. 
-The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, import dependencies, variable usages, inheritance dependencies, and others. Because the relationships between SCOs are not constrained to the boundaries of particular functions, files, and even packages, such graph captures global relationships, and, therefore, is a global graph. Global graph representation is an alternative approach to represent the source code besides abstract syntax trees (ASTs). We evaluate the usefulness of this global representation for solving different machine learning problems for source code. In this work, we aim at evaluating what kind of information can be inferred from high-level inter-project global relationships between SCOs. We purposefully do not consider the ASTs as their study was addressed in other works \cite{Alon2018}, \cite{Yahav2018}.
+Source code describes the relationships between source code objects (SCOs), such as modules, functions, classes, variables, etc. Some information about these SCOs can be inferred from the package and inter-project level dependencies. A package contain the information about the contextual similarity. The SCOs from the same package are likely to have related purpose. The information about how particular SCOs are used in different projects can tell us which packages are often used together, and what are the common combinations of SCOs to be used together in different projects. On these levels of abstraction, one does not concern with the particular way an SCO is implemented and can learn useful insights about its purpose simply from observing the way it is used. Traditional NLP approaches are not suited to capture these kind of relationship because they treat the input as a sequence of tokens. A structures representation of the source code is required instead.
 
-There are several papers that investigated what a model can learn from a particular source code representation. \cite{Alon2018a} used AST paths to predict the names of functions. \cite{Allamanis2017} used graph representation that rely on both global relationships and ASTs to find bugs. \cite{DeFreez2018} used a inter-procedural flow graph to find similar functions inside the Linux kernel source code. \cite{Raychev2015} used information about AST to predict variable names and types within a function. In contrast to these works, we focus on using only the information about global relationships. 
+The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, import dependencies, variable usages, inheritance dependencies, and others. Because the relationships between SCOs are not constrained to the boundaries of particular functions, files, and even packages, such graph captures global relationships, and, therefore, is a global graph. Global graph representation is an alternative approach to represent the source code besides other structures representations, such as abstract syntax trees (ASTs). We evaluate the usefulness of this global graph representation by solving different machine learning problems for source code. In this work, we aim at evaluating what kind of information can be inferred from high-level inter-project global relationships between SCOs. Moreover, we look into transferability of learned distributed representations for nodes in this graph to other problems. We purposefully do not consider the ASTs as their study was addressed in other works \cite{Alon2018}, \cite{Yahav2018}.
+
+There are several papers that investigated what a model can learn from a particular source code representation. \cite{Alon2018a} used AST paths to predict the names of functions. \cite{Allamanis2017} used graph representation that relies on both global relationships and ASTs to find bugs. \cite{DeFreez2018} used a inter-procedural flow graph to find similar functions inside the Linux kernel source code. \cite{Raychev2015} used information about AST to predict variable names and types within a function. In contrast to these works, we focus on using only the information about global relationships. 
 
 Our contribution is the following
 \begin{itemize}
-    \item We introduce a source-graph-dataset for Python, that captures information about global relationships between over 100 packages;
-    \item We evaluate the usefulness of global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction;
-    \item We evaluate the usefulness of the embeddings pre-trained on the tasks listed above for solving other tasks, such as function call prediction, type use prediction, node type prediction.
+    \item We introduce a source-graph-dataset that captures information about global relationships between over 100 Python packages;
+    \item We evaluate the usefulness of global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction. For our experiments we use Graph Neural Networks (GNNs);
+    \item We evaluate transferability of learned distributed representations of graph nodes by training additional models that try to predict different properties of SCOs. Additional tasks include function call prediction, type use prediction, node type prediction.
 \end{itemize}
 
 The rest of the paper is organized as follows.
 
 \section{\uppercase{Related Work}}
 
-Machine learning approaches are rapidly adopted in many different areas, including solving tasks on source code. One can view such tasks as bug detection [link] and API search [link] as ones of the most practical applications for source code analysis. Other applications include type prediction, class name prediction, variable name prediction. function name prediction, program classification, program summarization and other.  However, there is still work to be done in understanding what machine learning approaches can and cannot model. Some work was already done in this direction. 
+Machine learning approaches are rapidly adopted in many different areas, including solving problems in source code analysis. The list of problems that were already attempted include tasks such as bug detection \cite{Dinella2020} \cite{Wang2019} and API search \cite{Zhang2019} \cite{Wan2019}. These problems present a fundamental challenge for methods of source code analysis because they require the understanding of the program purpose. Other applications include type prediction \cite{Hellendoorn2018} \cite{Malik2019}, variable name prediction \cite{Cvitkovic2018} \cite{Bichsel2016}, function name prediction \cite{Lacomis2019} \cite{Alon2018}, program classification \cite{Ben-Nun2018} \cite{Zhou2019} \cite{Dam2019}, program summarization \cite{Fernandes2019} \cite{Shido2019} and other \cite{Nguyen2015} \cite{Yang2019} \cite{Chen2019} \cite{Drissi2018}.  
 
-[Nice2predict] represents a program int the form of XXX. They try to predict such properties of a program as variable names and type annotations for variables. The approach was highly successful as their method was able to annotate the names of the variables by only analyzing the program structure. The input of the analyzer - a separate function. This gives an insight into what king of information can be inferred from a function AST.
+One important aspect of learning problems is the representation of the input data. In the area of NLP the input is represented as a sequence. Although the source code is a sequential representation of a program, its execution nature is far from sequential. For this reason, researchers explored more suitable representation formats for source code. Here, we consider structural representation such as trees (ASTs) and graphs (dependence, control-flow, data-flow, etc). One of the valid research questions is which representation formats are useful for solving different target problems. Despite some progress, the research into representation formats for machine learning on source code is still ongoing.
 
-Modeling AST directly can be not the best approach for representing a function. A group of approaches that adopt a path-based representation of ASTs exist [pathbased]. They evaluated such representation on a different languages, such as python, javascript, java, and a set of different tasks, including function name prediction, type inference, variable name prediction. The approach was successful and was able to achieve better results than [Nice2predict], according to authors' claim. In their experiments, they determine the importance of path-based representations for solving aforementioned tasks, as compared with simple baselines and hand-crafted rules. We would like to perform similar comparison of the impact of different representation of source code elements on the capability of machine learning model to solve a useful task using these representations.
+\cite{Raychev2015} represent a program in the form of AST. They try to address a problem of predicting variable names in an obfuscated program. Such program can be either obtained in the process of decompilation or from obfuscated sources. Their approach, based on CRF, was highly successful and their method was able to annotate the names of the variables by only analyzing the program structure. The input of the analyzer is a whole function. This approach provides an insight into the information that is implicitly stored inside a program's AST.
 
-Some approaches turned to a graph representation of source code. [Allamanis] studied the graph-based representation of C\# source codes. This graph included such information as inheritance, definitions, variable uses, and typical data flow information that can be extracted from AST. They used this graph and Gated Graph Neural Networks to solve such tasks as variable misuse detection and variable naming suggestion. Another method that adopted graph representation for source code was presented in [Deep Learning On Code with an Unbounded Vocabulary]. They used information from AST and additional information about inter-project dependencies of functions and variables in the source code. Their method focused on solving variable name suggestion. These two works combine AST of a function with inter-project information, but they do not study the impact of different elements of representation on the final outcome. 
+AST might be useful for predicting variable names, but it is not guaranteed to be useful for other problems. In \cite{Alon2018}, an approach for using AST paths for predicting function names was introduced. Their approach was successful in predicting function names for Java code snippets. According to the authors' claim, the result appeared to be better than in \cite{Raychev2015}. In this work, a comprehensive comparison of different approaches to predict variable names was performed. The authors showed that AST path-based representations are useful to characterize a large portion of code, such as an entire function. 
 
-There are other works that adopt graph representation for source code [all of them]. However, often they rely on the information from intermediate representation, such as representation of LLVM compiler. Such representations are available only for a handful of programming languages and, in general, less interpretable. Our goal is to determine the importance of different types of information that is already available in source code for inferring source code properties. For this reason we will not go into depth describing these additional approaches. 
+Some researchers turned towards Graph Neural Networks (GNNs). In \cite{Allamanis2017}, a graph-based representation of C\# source code was studied. The authors used both global-level relationships as well as AST edges. This graph included such relationship edges as inheritance, definitions, variable uses, and typical data flow information that can be extracted from an AST. Authors used GNNs to address such problems for source code analysis as variable name suggestion and bug detection. 
+Another approach that adopted graph representation for source code was presented in \cite{Cvitkovic2018}. They used information from AST and global relationships for variable name suggestion. These two works combine AST of functions with inter-project information, but they do not study the role of different relationships in the final result. 
+
+Some other approaches they rely on the information from LLVM compiler to build graph representations \cite{Ben-Nun2018} \cite{Brauckmann2020}. However, such representations are available only for a handful of programming languages and, in general, are less interpretable. In contrast, our goal is to perform the analysis on the level of source code directly, so that the results can be easily interpreted by a programmer. 
+% For this reason we will not go into depth describing these additional approaches.
+
+The research in source code representation formats for machine learning is ongoing. In this regards, our contribution is in exploring to which extent the global relationships in the source code are useful for predicting some of the properties of SCOs.
+
+Another important aspect of machine learning models is the transferability of the knowledge. Transfer learning is widely used in the area of NLP, where representations for words are pretrained using either unsupervised objectives (such as ones used for Skipgram or BERT).
+% Different forms of pretraing for the source code were studied as well. 
+In \cite{Kanade2019}, authors studied the possibility of pretraining representations for the source code using one of the latest language modeling tools - BERT. Their result have shown that when using a pretrained layers, the model quickly adapts to the new problem and provides significant boost in performance. Authors demonstrated, that pretraining with a language model can significantly decrease training times and increase accuracy. We are interested in a different aspect of pretraining. Given an objective function, the model learns useful features for this objective. However, the same features can be useful for other objectives as well. Our goal is to investigate to which extent representations of SCOs learned on one task can be used for solving other tasks.
 
 \section{\uppercase{Task Description}}
 
@@ -217,38 +228,6 @@ For models that have a large amount of target labels, it makes sense to use rank
 
 \section{\uppercase{Experimental Results}}
 
-\begin{table*}
-    \centering
-    \begin{tabular}{|p{4cm}|p{5cm}|p{5cm}|}
-    \hline
-        **Target task (trained on)** & **Evaluation task (Using Last Layer of GNN)** & Result \\ \hline
-        Node type & For All (except node type) & Useless \\ \hline
-        Function Name "scores": \{    "loss": 0.2280,    "train\_acc": 0.9154,    "val\_acc": 0.6403,    "test\_acc": 0.6397  \} & FCG Link prediction & Random (1 neg smpl): 50 Emb (1 neg smpl): 57 \\ \hline
-         & API Seq Call & Random (1 neg smpl): 57Emb (1 neg smpl): 81 \\ \hline
-         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 80 \\ \hline
-         & FName & Random (1 neg smpl): 50Emb (1 neg smpl): 63 \\ \hline
-         & VarUse & Random (1 neg smpl): 62Emb (1 neg smpl): 74 \\ \hline
-         & Node Type & Random (1 neg smpl): 50Emb (1 neg smpl): 65 \\ \hline
-        Function Name W2V style "scores": \{    "loss": 0.21,    "train\_acc": 0.92,    "val\_acc": 0.65,    "test\_acc": 0.65  \} & FCG Link prediction &  \\ \hline
-         & API Seq Call &  \\ \hline
-         & Type Use &  \\ \hline
-         & FName &  \\ \hline
-         & VarUse &  \\ \hline
-         & Node Type &  \\ \hline
-        Next call "scores": \{     "loss": 0.12,    "train\_acc": 0.91,    "val\_acc": 0.90,    "test\_acc": 0.90  \}"scores": \{    "loss": 0.2509,    "train\_acc": 0.9029,    "val\_acc": 0.7817,    "test\_acc": 0.7820  \} & FCG Link prediction & Random (1 neg smpl): 50Emb (1 neg smpl): 68 \\ \hline
-         & API Seq Call & Random (1 neg smpl): 65Emb (1 neg smpl): 87 88 78 \\ \hline
-         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 60 \\ \hline
-         & FName & Random (1 neg smpl): 51Emb (1 neg smpl): 59 \\ \hline
-         & VarUse & Random (1 neg smpl): 61Emb (1 neg smpl): 74 \\ \hline
-         & Node Type & 50 \\ \hline
-        Variable names "scores": \{    "loss": 0.4836,    "train\_acc": 0.7425,    "val\_acc": 0.7262,    "test\_acc": 0.7216  \} & FCG Link prediction & Random (1 neg smpl): 61Emb (1 neg smpl): 74 \\ \hline
-         & API Seq Call & Random (1 neg smpl): 61Emb (1 neg smpl): 81 \\ \hline
-         & Type Use & Random (1 neg smpl): 50Emb (1 neg smpl): 63 \\ \hline
-         & FName & Random (1 neg smpl): 51Emb (1 neg smpl): 60 \\ \hline
-         & VarUse & Random (1 neg smpl): 62Emb (1 neg smpl): 74 \\ \hline
-         & Node Type & Random (1 neg smpl): 45Emb (1 neg smpl): 56 \\ \hline
-    \end{tabular}
-\end{table*}
 
 % \section{\uppercase{Evaluation}}
 
@@ -294,23 +273,6 @@ For models that have a large amount of target labels, it makes sense to use rank
 
 
 
-
-\section{\uppercase{Results}}
-
-\begin{table*}[]
-\centering
-\label{tbl:results}
-\caption{Results of link prediction}
-\begin{tabular}{lllllll}
-model   & call & call seq & type use & node type & variable use & function name \\ \hline
-gat l1  &      &          &          &           &              &               \\
-gat l2  &      &          &          &           &              &               \\
-gat l3  &      &          &          &           &              &               \\
-rgcn l1 &      &          &          &           &              &               \\
-rgcn l2 &      &          &          &           &              &               \\
-rgcn l3 &      &          &          &           &              &              
-\end{tabular}
-\end{table*}
 
 
 \bibliographystyle{apalike}
