@@ -109,7 +109,7 @@ The nodes in our graph also have different types that are self-explanatory (see 
 \centering
 \begin{tabular}{lll}
     \toprule
-    Node Type        & Count  \\ \midrule
+    \textbf{Node Type}        & \textbf{Count}  \\ \midrule
     Function        & 221822 \\ \midrule
     Class field     & 83077 \\ \midrule
     Class           & 35798 \\ \midrule
@@ -124,7 +124,7 @@ The nodes in our graph also have different types that are self-explanatory (see 
 \centering
 \begin{tabular}{ll}
 \toprule
-Edge Type       & Count \\ \midrule
+\textbf{Edge Type}       & \textbf{Count} \\ \midrule
 Call            & 614621 \\ \midrule
 Define/Contain  & 431115 \\ \midrule
 Type use        & 239543 \\ \midrule
@@ -228,18 +228,24 @@ We take the test set of nodes that was generated during preparation of the main 
 \begin{table*}
     \centering
     \caption{Description of experiments and what is trained}\label{tbl:experiment_desc}
-    \begin{tabular}{|p{3cm}|p{6cm}|p{6cm}|}
+    \begin{tabular}{p{3cm}p{6cm}p{6cm}}
     \toprule
         \textbf{Experiment} & \textbf{Model description} & \textbf{What is trained} \\ \midrule
-        Next function, call, type use & Both nodes are from the original graph. Node embeddings are concatenated and classified & Binary classifier that predicts the the presence of edge between nodes \\ \midrule
-        Function name, variable names & Src node from the original graph, dst node is new. Node embeddings are concatenated and classified & Binary classifier that predicts the presence of edge between nodes. Embeddings for dst noes. \\ \midrule
-        Node type & Node is classified into a relatively small number of classes. Node embedding taken from the original graph. & Node classifier \\ \bottomrule
+        Next function, Function call, Type usage & Both nodes have pre-trained embeddings. Node embeddings are concatenated and classified & Binary classifier for link prediction \\ \midrule
+        SCO name, variable name usage & Source node embedding is pre-trained, destination node embedding is trained from scratch. & Binary classifier. Embeddings for destination nodes. \\ \midrule
+        Node type & Node embedding is classified into a relatively small number of classes. Node embedding are pre-trained. & Node classifier \\ \bottomrule
     \end{tabular}
 \end{table*}
 
 
 
 \section{\uppercase{Experimental Setup and Results}}
+
+For implementing GNN training procedure we use DeepGraphLibrary. We use standard implementations of GAT and RGCN networks. For GAT, we use the size of the hidden representation of 50 with two head attention. This yields hidden state representation of size 100. In all layers, we use LeakyReLU as activation because, according to our observations, it produced the best results for this type of GNN\@. For RGCN, we use the size of hidden layer equal to 100. HardTanh was chosen as the activation function. For both network types have 3 layers in total. 
+
+The embeddings for SCO names and variable names reside in separate embedding tables. In both cases, they have embeddings of size 100. We use a simple neural network as a binary classifier. Since it accepts concatenated vectors as input, the input dimensionality is 200. This network has one hidden layer with 20 units. ReLU was chosen as the activation function for the classifier. The dimensionality of embeddings and the hyper-parameters of binary classifier are identical during additional experiments.
+
+The negative sampling procedure is similar to the one used in \cite{mikolov2013distributed}. The noise distribution is created from raised unigram distribution computed for destination nodes. The weight of unigram distribution are taken to the power of 3/4 (as in the original Word2Vec paper). During training of GNN model, we sample 3 negative edges per one positive edge. During additional experiments, the number of positive and negative edges during the training is equal.
 
 
 \section{\uppercase{Discussion}}
