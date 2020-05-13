@@ -76,32 +76,34 @@ Another important aspect of machine learning models is the transferability of th
 % Different forms of pretraing for the source code were studied as well. 
 In \cite{Kanade2019}, authors studied the possibility of pretraining representations for the source code using one of the latest language modeling tools - BERT. Their result have shown that when using a pretrained layers, the model quickly adapts to the new problem and provides significant boost in performance. Authors demonstrated, that pretraining with a language model can significantly decrease training times and increase accuracy. We are interested in a different aspect of pretraining. Given an objective function, the model learns useful features for this objective. However, the same features can be useful for other objectives as well. Our goal is to investigate to which extent representations of SCOs learned on one task can be used for solving other tasks.
 
-\section{\uppercase{Task Description}}
-
-\section{\uppercase{Model Description}}
-
-Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passes over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is used for node classification task. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
-
-\textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
-
-$$
-h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
-$$
-
-\textbf{Relational Graph Convolutional Network} allows modeling heterogeneous graphs with different relation types. In this variant, there is a dedicated set of weights for each type of connection. 
-$$
-h_i^{(l+1)} = \sigma\left(\sum_{r\in \mathcal{R}}
-\sum_{j\in\mathcal{N}_r(i)}W_r^{(l)}h_j^{(l)}\right)
-$$
 
 
-\section{\uppercase{Training Data Description}}
+\section{\uppercase{Main Task Description}}
 
-In this work, we represent the source code with a graph. We used the Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions. 
+\subsection{Global Graph Description}
 
-The entire package collection presents a graph with different type of nodes and edges. The type count for nodes and edges is given in the tables \ref{tbl:python_node_count} and \ref{tbl:python_edge_count}. 
+In this work, we represent the source code with a global graph. We used the Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions from Python language. 
 
-The target graph does not contain any information about function bodies, except the function call graph.
+The entire package collection is compiled into a graph with different types of nodes and edges. The type count for nodes and edges is given in the tables \ref{tbl:python_node_count} and \ref{tbl:python_edge_count} respectively.
+
+The central aspect of our source code graph is directed typed relationships. Five different edge types are available for Python.
+
+\begin{itemize}
+    \item \textbf{Call edges}. These edges are present between two functions if one function calls another function inside its body.
+    \item \textbf{Define/Contain Edges}. These edges can represent relationships between different objects. Such edges are present between modules and functions or classes that are defined in these modules. Also, these edges exist between classes and class methods.
+    \item \textbf{Type use edges}. These edges appear between functions and classes to represent that a specific class (type) was mentioned inside the body of the function.
+    \item \textbf{Import edges}. This relationship is registered when a module or a function is imported.
+    \item \textbf{Inheritance edges}. These edges are present between classes if one inherits the other. 
+\end{itemize}
+
+The nodes in our graph also have different types that are self explanatory (see table \ref{tbl:python_node_count}. However, the node types were not used when training our models due to the limitation of our computational capacity. The example of a graph, compiled using Sourcetrail is shown in Figure \ref{fig:python_graph}.
+
+\begin{figure}
+    \centering
+    \includegraphics{python_graph_example.pdf}
+    \caption{Example of global graph constructed from two toy modules.}
+    \label{fig:python_graph}
+\end{figure}
 
 \begin{table}[]
 \centering
@@ -132,7 +134,48 @@ Inherit         & 26525 \\ \hline
 \caption{Edge count in Python graph by edge type \label{tbl:python_edge_count}}
 \end{table}
 
-\section{\uppercase{Training Procedure}}
+\subsection{Description of Learning Objectives}
+
+% In this paper, we pursue several goals. First, we are studying global graph representation for the source code. We do this by evaluating a GNN model trained on this graph on several tasks. 
+One of our goals is to evaluate a GNN model trained on global source graph. We do this by training this model using several objectives.
+
+The first objective is SCO \textbf{name prediction}, which includes predicting function names, class names, variable names, etc. This objective can be seen as semantically challenging because the original graph contains only the information about the relationships between SCOs. The premise for this task is that objects with specific common names have fixed usage patterns. The fact that some objects can be references in common settings implies that they have similar purpose, and often, similar names. In this task, the target can be defined for every node in the global graph.
+
+The second objective is \textbf{predicting names of variables} that are used inside a function. This is also a semantically challenging task. Very often, variable names explain the purpose of a function, or at very least, the topical area to which this function belongs. We expect that functions that implement similar functionality, or belong to the same package are likely to use similar variable names. The variable names are extracted from function bodies. Because of the way the objective is specified, the target is defined only for the nodes in the graph that represent functions.  
+
+The third objective is \textbf{predicting next function} to be called after the current function. In order to be able to predict the next call, the model should learn common usage patterns for functions. These usage patterns include built-in functions, functions from the same package, and functions from other packages. As with the case of variable name prediction, the objective is defined only for the nodes that represent functions. 
+
+Some of the objectives are defined only for a subset of nodes. However, the GNNs are implemented in a way, where representation for all nodes are trained simultaneously. For this reason, GNN learning tasks are sometimes seen as semi-supervised learning problems.
+
+All of three objective can be treated as link prediction problems. We represent unique function names and unique variable names as nodes in the graph. Then, the goal is to predict the presence of a link between an SCO and these additional nodes. For the task of predicting the next function call, the link is predicted between two SCOs. The problem of link prediction is a binary classification problem and can be solved using a simple logistic classifier. In our model for link prediction, we concatenate the embeddings for different nodes, and then pass the resulting representation to a simple neural network.
+
+We use three objectives explained above to train several GNN models to see to which extent the information about global relationships is useful for solving these tasks. Moreover, we experiment with a multitask objective. After, we investigate the applicability of learned distributed representations to predict properties of some of the nodes in the global graph with a series of experiments. These experiments are designed to identify the usefulness of objectives described above for solving other tasks. The details of these experiments are given in .
+
+\subsection{GNN Models}
+
+Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passed over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is passed to the classifier that predict links. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
+
+In our experiments, we use two different GNN architectures. The first is Graph Attention Network (GAT). This architecture does not support different types of relationships and treats them the same. The second architecture is Relations Graph Convolutional Network (RGCN). This network was designed to process heterogeneous graphs and supports different types of edges. We use these two type of networks to investigate the impact of the edge types on the final result. 
+
+Other works that rely on GNNs use more complicated architectures \cite{Allamanis2017} \cite{Cvitkovic2018}. However, the search of the best neural architecture is not our goal. For the latest findings in the area of architecture search for processing source code with GNNs see \cite{hellendoorn2020global}.
+
+The reason we choose GNN models for our experiments is because, at the moment, they are considered the most suitable for processing graphs. 
+We tried to use other approaches for learning representations for nodes, specifically Node2Vec, but they did not prove to be useful for out tasks.
+
+% \textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
+
+% $$
+% h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
+% $$
+
+% \textbf{Relational Graph Convolutional Network} allows modeling heterogeneous graphs with different relation types. In this variant, there is a dedicated set of weights for each type of connection. 
+% $$
+% h_i^{(l+1)} = \sigma\left(\sum_{r\in \mathcal{R}}
+% \sum_{j\in\mathcal{N}_r(i)}W_r^{(l)}h_j^{(l)}\right)
+% $$
+
+
+\section{\uppercase{GNN Training Procedure}}
 
 The goal of the training procedure is to learn useful embeddings for graph nodes. We train embeddings while learning how classify graph nodes. The list of classes is given in table \ref{tbl:python_node_count}.
 
