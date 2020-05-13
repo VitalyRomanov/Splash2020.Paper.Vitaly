@@ -13,6 +13,7 @@
 \usepackage{hyperref}
 \usepackage{apalike}
 \usepackage{url}
+\usepackage{booktabs}
 \usepackage{SCITEPRESS}     % Please add other packages that you may need BEFORE the SCITEPRESS.sty package.
 
 
@@ -37,19 +38,19 @@
 
 \section{\uppercase{Introduction}}
 % \noindent 
-Source code can be considered as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve machine learning tasks for source code. One of the noteworthy applications of modeling source code is the source code search. In this application, a user can find a relevant code snippet using a natural language query. Such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function, which, in most cases, is sufficient to understand the purpose of this function. However, learning algorithms still struggle to process sequences of actions that are common in source code. At the same time, current approaches proved to be quite successful in capturing co-occurrence statistics. For source code, such statistics can be extracted from global usage patterns on a package or inter-project levels. Our goal is to study how useful this global information is by posing this goal as evaluation of a machine learning tasks on graphs.
+Source code can be viewed as a form of natural language. Lately we see the rise of the approaches that try using advances in the area of Natural Language Processing to solve machine learning tasks for source code. One of the noteworthy applications of modeling source code is the source code search. In this application, a user can find a relevant code snippet using a natural language query. Such approaches do not even require the code to have any extra annotation or documentation. However, most of such approaches work on the level of the body of a single function, which, in most cases, is sufficient to understand the purpose of this function. However, learning algorithms still struggle to process sequences of actions that are common in source code. At the same time, current approaches proved to be quite successful in capturing co-occurrence statistics. For source code, such statistics can be extracted from global usage patterns on a package or inter-project levels. Our goal is to study how useful this global information is by posing this goal as an evaluation of machine learning tasks on graphs.
  
-Source code describes the relationships between source code objects (SCOs), such as modules, functions, classes, variables, etc. Some information about these SCOs can be inferred from the package and inter-project level dependencies. A package contain the information about the contextual similarity. The SCOs from the same package are likely to have related purpose. The information about how particular SCOs are used in different projects can tell us which packages are often used together, and what are the common combinations of SCOs to be used together in different projects. On these levels of abstraction, one does not concern with the particular way an SCO is implemented and can learn useful insights about its purpose simply from observing the way it is used. Traditional NLP approaches are not suited to capture these kind of relationship because they treat the input as a sequence of tokens. A structures representation of the source code is required instead.
+Source code describes the relationships between source code objects (SCOs), such as modules, functions, classes, variables, etc. Some information about these SCOs can be inferred from the package and inter-project level dependencies. A package contains information about the contextual similarity. The SCOs from the same package are likely to have a related purpose. The information about how particular SCOs are used in different projects can tell us which packages are often used together, and what are the common combinations of SCOs to be used together in various projects. On these levels of abstraction, one does not concern with the particular way an SCO is implemented and can learn useful insights about its purpose from merely observing the way it is used. Traditional NLP approaches are not suited to capture these kinds of relationships because they treat the input as a sequence of tokens. A structured representation of the source code is required instead.
 
-The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, import dependencies, variable usages, inheritance dependencies, and others. Because the relationships between SCOs are not constrained to the boundaries of particular functions, files, and even packages, such graph captures global relationships, and, therefore, is a global graph. Global graph representation is an alternative approach to represent the source code besides other structures representations, such as abstract syntax trees (ASTs). We evaluate the usefulness of this global graph representation by solving different machine learning problems for source code. In this work, we aim at evaluating what kind of information can be inferred from high-level inter-project global relationships between SCOs. Moreover, we look into transferability of learned distributed representations for nodes in this graph to other problems. We purposefully do not consider the ASTs as their study was addressed in other works \cite{Alon2018}, \cite{Yahav2018}.
+The package and inter-project levels of abstraction are well represented using a graph. Such a graph can include different types of relationships, including call dependencies, type dependencies, import dependencies, variable usages, inheritance dependencies, and others. Because the relationships between SCOs are not constrained to the boundaries of particular functions, files, and even packages, such a graph captures global relationships, and, therefore, is a global graph. Global graph representation is an alternative approach to represent the source code besides other structures representations, such as abstract syntax trees (ASTs). We evaluate the usefulness of this global graph representation by solving different machine learning problems for source code. In this work, we aim at assessing what kind of information can be inferred from high-level inter-project global relationships between SCOs. Moreover, we look into the transferability of learned distributed representations for nodes in this graph to other problems. We purposefully do not consider the ASTs as their study was addressed in other works \cite{Alon2018}, \cite{Yahav2018}.
 
-There are several papers that investigated what a model can learn from a particular source code representation. \cite{Alon2018a} used AST paths to predict the names of functions. \cite{Allamanis2017} used graph representation that relies on both global relationships and ASTs to find bugs. \cite{DeFreez2018} used a inter-procedural flow graph to find similar functions inside the Linux kernel source code. \cite{Raychev2015} used information about AST to predict variable names and types within a function. In contrast to these works, we focus on using only the information about global relationships. 
+There are several papers that investigated what a model can learn from a particular source code representation. \cite{Alon2018a} used AST paths to predict the names of functions. \cite{Allamanis2017} used graph representation that relies on both global relationships and ASTs to find bugs. \cite{DeFreez2018} used an inter-procedural flow graph to find similar functions inside the Linux kernel source code. \cite{Raychev2015} used information about AST to predict variable names and types within a function. In contrast to these works, we focus on using only information about global relationships. 
 
 Our contribution is the following
 \begin{itemize}
     \item We introduce a source-graph-dataset that captures information about global relationships between over 100 Python packages;
-    \item We evaluate the usefulness of global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction. For our experiments we use Graph Neural Networks (GNNs);
-    \item We evaluate transferability of learned distributed representations of graph nodes by training additional models that try to predict different properties of SCOs. Additional tasks include function call prediction, type use prediction, node type prediction.
+    \item We evaluate the usefulness of a global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction. For our experiments we use Graph Neural Networks (GNNs);
+    \item We evaluate the transferability of learned distributed representations of graph nodes by training additional models that try to predict different properties of SCOs. Additional tasks include function call prediction, type use prediction, node type prediction.
 \end{itemize}
 
 The rest of the paper is organized as follows.
@@ -60,21 +61,21 @@ Machine learning approaches are rapidly adopted in many different areas, includi
 
 One important aspect of learning problems is the representation of the input data. In the area of NLP the input is represented as a sequence. Although the source code is a sequential representation of a program, its execution nature is far from sequential. For this reason, researchers explored more suitable representation formats for source code. Here, we consider structural representation such as trees (ASTs) and graphs (dependence, control-flow, data-flow, etc). One of the valid research questions is which representation formats are useful for solving different target problems. Despite some progress, the research into representation formats for machine learning on source code is still ongoing.
 
-\cite{Raychev2015} represent a program in the form of AST. They try to address a problem of predicting variable names in an obfuscated program. Such program can be either obtained in the process of decompilation or from obfuscated sources. Their approach, based on CRF, was highly successful and their method was able to annotate the names of the variables by only analyzing the program structure. The input of the analyzer is a whole function. This approach provides an insight into the information that is implicitly stored inside a program's AST.
+\cite{Raychev2015} represent a program in the form of AST\@. They try to address the problem of predicting variable names in an obfuscated program. Such a program can be either obtained in the process of decompilation or from obscured sources. Their approach, based on CRF, was highly successful, and their method was able to annotate the names of the variables by only analyzing the program structure. The input of the analyzer is a whole function. This approach provides an insight into the information that is implicitly stored inside a program's AST\@.
 
-AST might be useful for predicting variable names, but it is not guaranteed to be useful for other problems. In \cite{Alon2018}, an approach for using AST paths for predicting function names was introduced. Their approach was successful in predicting function names for Java code snippets. According to the authors' claim, the result appeared to be better than in \cite{Raychev2015}. In this work, a comprehensive comparison of different approaches to predict variable names was performed. The authors showed that AST path-based representations are useful to characterize a large portion of code, such as an entire function. 
+AST might be useful for predicting variable names, but it is not guaranteed to be useful for other problems. In~\cite{Alon2018}, an approach for using AST paths for predicting function names was introduced. Their approach was successful in predicting function names for Java code snippets. According to the authors' claim, the result appeared to be better than in~\cite{Raychev2015}. In this work, a comprehensive comparison of different approaches to predict variable names was performed. The authors showed that AST path-based representations are useful to characterize a large portion of code, such as an entire function. 
 
-Some researchers turned towards Graph Neural Networks (GNNs). In \cite{Allamanis2017}, a graph-based representation of C\# source code was studied. The authors used both global-level relationships as well as AST edges. This graph included such relationship edges as inheritance, definitions, variable uses, and typical data flow information that can be extracted from an AST. Authors used GNNs to address such problems for source code analysis as variable name suggestion and bug detection. 
-Another approach that adopted graph representation for source code was presented in \cite{Cvitkovic2018}. They used information from AST and global relationships for variable name suggestion. These two works combine AST of functions with inter-project information, but they do not study the role of different relationships in the final result. 
+Some researchers turned towards Graph Neural Networks (GNNs). In~\cite{Allamanis2017}, graph-based representation of C\# source code was studied. The authors used both global-level relationships as well as AST edges. This graph included such relationship edges as inheritance, definitions, variable uses, and typical data flow information that can be extracted from an AST\@. Authors used GNNs to address issues in source code analysis, such as variable name suggestion and bug detection. 
+Another approach that adopted graph representation for source code was presented in~\cite{Cvitkovic2018}. They used information from AST and global relationships for the variable name suggestion problem. These two works combine AST of functions with inter-project information, but they do not study the role of different relationships in the final result. 
 
-Some other approaches they rely on the information from LLVM compiler to build graph representations \cite{Ben-Nun2018} \cite{Brauckmann2020}. However, such representations are available only for a handful of programming languages and, in general, are less interpretable. In contrast, our goal is to perform the analysis on the level of source code directly, so that the results can be easily interpreted by a programmer. 
-% For this reason we will not go into depth describing these additional approaches.
+Some other approaches they rely on the information from the LLVM compiler to build graph representations \cite{Ben-Nun2018} \cite{Brauckmann2020}. However, such representations are available only for a handful of programming languages and, in general, are less interpretable. In contrast, our goal is to perform the analysis on the level of source code directly, so that a programmer can easily interpret the results. 
+% For this reason we will not go into depth describing these other approaches.
 
-The research in source code representation formats for machine learning is ongoing. In this regards, our contribution is in exploring to which extent the global relationships in the source code are useful for predicting some of the properties of SCOs.
+The research in source code representation formats for machine learning is ongoing. In this regard, our contribution is in exploring to which extent the global relationships in the source code are useful for predicting some of the properties of SCOs.
 
-Another important aspect of machine learning models is the transferability of the knowledge. Transfer learning is widely used in the area of NLP, where representations for words are pretrained using either unsupervised objectives (such as ones used for Skipgram or BERT).
-% Different forms of pretraing for the source code were studied as well. 
-In \cite{Kanade2019}, authors studied the possibility of pretraining representations for the source code using one of the latest language modeling tools - BERT. Their result have shown that when using a pretrained layers, the model quickly adapts to the new problem and provides significant boost in performance. Authors demonstrated, that pretraining with a language model can significantly decrease training times and increase accuracy. We are interested in a different aspect of pretraining. Given an objective function, the model learns useful features for this objective. However, the same features can be useful for other objectives as well. Our goal is to investigate to which extent representations of SCOs learned on one task can be used for solving other tasks.
+Another important aspect of machine learning models is the transferability of knowledge. Transfer learning is widely used in the area of NLP, where representations for words are pre-trained using either unsupervised objectives (such as ones used for Skipgram or BERT).
+% Different forms of pre-training for the source code were studied as well. 
+In \cite{Kanade2019}, authors studied the possibility of pre-training representations for the source code using one of the latest language modeling tools --- BERT\@. Their result have shown that when using pre-trained layers, the model quickly adapts to the new problem and provides a significant boost in performance. Authors demonstrated, that pre-training with a language model can significantly decrease training times and increase accuracy. We are interested in a different aspect of pre-training. Given an objective function, the model learns useful features for this objective. However, the same features can be helpful for other objectives as well. Our goal is to investigate to which extent representations of SCOs learned on one task can be used for solving other tasks.
 
 
 
@@ -84,7 +85,7 @@ In \cite{Kanade2019}, authors studied the possibility of pretraining representat
 
 In this work, we represent the source code with a global graph. We used the Sourcetrail tool to index a collection of Python packages. All packages are interconnected either through inter-package calls and imports, or through the use of similar built-in functions from Python language. 
 
-The entire package collection is compiled into a graph with different types of nodes and edges. The type count for nodes and edges is given in the tables \ref{tbl:python_node_count} and \ref{tbl:python_edge_count} respectively.
+The entire package collection is compiled into a graph with different types of nodes and edges. The type count for nodes and edges is given in the tables~\ref{tbl:python_node_count} and~\ref{tbl:python_edge_count} respectively.
 
 The central aspect of our source code graph is directed typed relationships. Five different edge types are available for Python.
 
@@ -92,54 +93,53 @@ The central aspect of our source code graph is directed typed relationships. Fiv
     \item \textbf{Call edges}. These edges are present between two functions if one function calls another function inside its body.
     \item \textbf{Define/Contain Edges}. These edges can represent relationships between different objects. Such edges are present between modules and functions or classes that are defined in these modules. Also, these edges exist between classes and class methods.
     \item \textbf{Type use edges}. These edges appear between functions and classes to represent that a specific class (type) was mentioned inside the body of the function.
-    \item \textbf{Import edges}. This relationship is registered when a module or a function is imported.
+    \item \textbf{Import edges}. This relationship is registered when a module or function is imported.
     \item \textbf{Inheritance edges}. These edges are present between classes if one inherits the other. 
 \end{itemize}
 
-The nodes in our graph also have different types that are self explanatory (see table \ref{tbl:python_node_count}. However, the node types were not used when training our models due to the limitation of our computational capacity. The example of a graph, compiled using Sourcetrail is shown in Figure \ref{fig:python_graph}.
+The nodes in our graph also have different types that are self-explanatory (see table~\ref{tbl:python_node_count}). However, the node types were not used when training our models due to the limitation of our computational capacity. The example of a graph, compiled using Sourcetrail is shown in Figure~\ref{fig:python_graph}.
 
 \begin{figure}
     \centering
     \includegraphics{python_graph_example.pdf}
-    \caption{Example of global graph constructed from two toy modules.}
-    \label{fig:python_graph}
+    \caption{Example of global graph constructed from two toy modules.}\label{fig:python_graph}
 \end{figure}
 
 \begin{table}[]
 \centering
-\begin{tabular}{|l|l|l|}
- \hline
-Node Type        & Count  \\ \hline
-Function        & 221822 \\ \hline
-Class field     & 83077 \\ \hline
-Class           & 35798 \\ \hline
-Module          & 18097 \\ \hline
-Class method    & 14953 \\ \hline
-Non-indexed symbol  & 853  \\ \hline
+\begin{tabular}{lll}
+    \toprule
+    Node Type        & Count  \\ \midrule
+    Function        & 221822 \\ \midrule
+    Class field     & 83077 \\ \midrule
+    Class           & 35798 \\ \midrule
+    Module          & 18097 \\ \midrule
+    Class method    & 14953 \\ \midrule
+    Non-indexed symbol  & 853  \\ \bottomrule
 \end{tabular}
-\caption{Node types present in Python source graph \label{tbl:python_node_count}}
+\caption{Node types present in Python source graph\label{tbl:python_node_count}}
 \end{table}
 
 \begin{table}[]
 \centering
-\begin{tabular}{|l|l|}
-\hline
-Edge Type       & Count \\ \hline
-Call            & 614621 \\ \hline
-Define/Contain  & 431115 \\ \hline
-Type use        & 239543 \\ \hline
-Import          & 121752 \\ \hline
-Inherit         & 26525 \\ \hline
+\begin{tabular}{ll}
+\toprule
+Edge Type       & Count \\ \midrule
+Call            & 614621 \\ \midrule
+Define/Contain  & 431115 \\ \midrule
+Type use        & 239543 \\ \midrule
+Import          & 121752 \\ \midrule
+Inherit         & 26525 \\ \bottomrule
 \end{tabular}
-\caption{Edge count in Python graph by edge type \label{tbl:python_edge_count}}
+\caption{Edge count in Python graph by edge type\label{tbl:python_edge_count}}
 \end{table}
 
 \subsection{Description of Learning Objectives}
 
 % In this paper, we pursue several goals. First, we are studying global graph representation for the source code. We do this by evaluating a GNN model trained on this graph on several tasks. 
-One of our goals is to evaluate a GNN model trained on global source graph. We do this by training this model using several objectives.
+One of our goals is to evaluate a GNN model trained on a global source graph. We do this by training this model using several objectives.
 
-The first objective is SCO \textbf{name prediction}, which includes predicting function names, class names, variable names, etc. This objective can be seen as semantically challenging because the original graph contains only the information about the relationships between SCOs. The premise for this task is that objects with specific common names have fixed usage patterns. The fact that some objects can be references in common settings implies that they have similar purpose, and often, similar names. In this task, the target can be defined for every node in the global graph.
+The first objective is SCO \textbf{name prediction}, which includes predicting function names, class names, variable names, etc. This objective can be seen as semantically challenging because the original graph contains only the information about the relationships between SCOs. The premise for this task is that objects with specific common names have fixed usage patterns. The fact that some objects can be references in common settings implies that they have a similar purpose, and often, similar names. In this task, the target can be defined for every node in the global graph.
 
 The second objective is \textbf{predicting names of variables} that are used inside a function. This is also a semantically challenging task. Very often, variable names explain the purpose of a function, or at very least, the topical area to which this function belongs. We expect that functions that implement similar functionality, or belong to the same package are likely to use similar variable names. The variable names are extracted from function bodies. Because of the way the objective is specified, the target is defined only for the nodes in the graph that represent functions.  
 
@@ -147,22 +147,22 @@ The third objective is \textbf{predicting next function} to be called after the 
 
 Some of the objectives are defined only for a subset of nodes. However, the GNNs are implemented in a way, where representation for all nodes are trained simultaneously. For this reason, GNN learning tasks are sometimes seen as semi-supervised learning problems.
 
-All of three objective can be treated as link prediction problems. We represent unique function names and unique variable names as nodes in the graph. Then, the goal is to predict the presence of a link between an SCO and these additional nodes. For the task of predicting the next function call, the link is predicted between two SCOs. The problem of link prediction is a binary classification problem and can be solved using a simple logistic classifier. In our model for link prediction, we concatenate the embeddings for different nodes, and then pass the resulting representation to a simple neural network.
+All of three objectives can be treated as link prediction problems. We represent unique function names and unique variable names as nodes in the graph. Then, the goal is to predict the presence of a link between an SCO and these additional nodes. For the task of predicting the next function call, the link is predicted between two SCOs. The problem of link prediction is a binary classification problem and can be solved using a simple logistic classifier. In our model for link prediction, we concatenate the embeddings for different nodes, and then pass the resulting representation to a simple neural network.
 
 We use three objectives explained above to train several GNN models to see to which extent the information about global relationships is useful for solving these tasks. Moreover, we experiment with a multitask objective. After, we investigate the applicability of learned distributed representations to predict properties of some of the nodes in the global graph with a series of experiments. These experiments are designed to identify the usefulness of objectives described above for solving other tasks. The details of these experiments are given in .
 
 \subsection{GNN Models}
 
-Graph Neural Networks (GNN) a based on message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbours. The neighbours aggregate messages from adjacent nodes using a neural network. Usually, the messages are passed over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is passed to the classifier that predict links. We interpret the initial state of the node, before any message-passing occurs, as the original node embedding. Consecutive embeddings can be viewed as the contextual embeddings with different context size. The best context size for solving the link prediction task is subject to exploration.
+Graph Neural Networks (GNN) is based on a message-passing mechanism. Each node possesses an internal state. During message-passing, the node sends its state to its neighbors. The neighbors aggregate messages from adjacent nodes using a neural network. Usually, the messages are passed over the entire network a fixed number of steps. The message-passing steps are treated as network layers. The final node state is passed to the classifier that predicts links. The initial representation of a node is a context-free embedding. Embeddings from the consecutive layers can be viewed as the contextual. The size of the context depends on the number of layers. The best context size for solving the link prediction task is subject to exploration.
 
-In our experiments, we use two different GNN architectures. The first is Graph Attention Network (GAT). This architecture does not support different types of relationships and treats them the same. The second architecture is Relations Graph Convolutional Network (RGCN). This network was designed to process heterogeneous graphs and supports different types of edges. We use these two type of networks to investigate the impact of the edge types on the final result. 
+In our experiments, we use two different GNN architectures. The first is the Graph Attention Network (GAT). This architecture does not support different types of relationships and treats them the same. The second architecture is Relations Graph Convolutional Network (RGCN). This network was designed to process heterogeneous graphs and supports different types of edges. We use these two types of networks to investigate the impact of the edge types on the final result. 
 
 Other works that rely on GNNs use more complicated architectures \cite{Allamanis2017} \cite{Cvitkovic2018}. However, the search of the best neural architecture is not our goal. For the latest findings in the area of architecture search for processing source code with GNNs see \cite{hellendoorn2020global}.
 
 The reason we choose GNN models for our experiments is because, at the moment, they are considered the most suitable for processing graphs. 
 We tried to use other approaches for learning representations for nodes, specifically Node2Vec, but they did not prove to be useful for out tasks.
 
-% \textbf{Graph Attention Network} is a model that uses attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
+% \textbf{Graph Attention Network} is a model that uses the attention mechanism during the aggregation of messages. Thus, this neural network can select the most relevant messages for computing the current internal state.
 
 % $$
 % h_i^{(l+1)}=\sigma\left(\sum_{j\in \mathcal{N}(i)} {\frac{1}{c_{ij}} W^{(l)}h^{(l)}_j}\right)
@@ -186,8 +186,8 @@ The task of link prediction requires training additional models. We allocate 10\
 \subsection{Preparing the graph}
 The graph is prepared in the following way:
 \begin{enumerate}
-    \item Edges are split into the train set and holdout set. Holdout set is used in future experiments. Without a holdout set the results of the future experiments may be biased. After removing holdout edges from the main graph, the disconnected nodes are filtered, so that the graph remains connected.
-    \item Since training objectives will be defined on the node embeddings, the nodes are split into train, test, and validation sets. The test set should be used in the future experiments for training. Validation and test sets are equal in size and constitute 40% of all nodes.
+    \item Edges are split into the train set and holdout set. The holdout set is used in future experiments. Without a holdout set the results of the future experiments may be biased. After removing holdout edges from the main graph, the disconnected nodes are filtered, so that the graph remains connected.
+    \item Since training objectives will be defined on the node embeddings, the nodes are split into the train, test, and validation sets. The test set should be used in future experiments for training. Validation and test sets are equal in size and constitute 40% of all nodes.
 \end{enumerate}
 
 Some notes about the operational mode should be taken. 
@@ -208,18 +208,18 @@ Several objectives are explored for training
     \item Vector similarity with classifier
     The idea for this approach is similar to the one described above. The target is to predict the presence of an edge between two nodes: a graph node, and a label node. In contrast with the procedure described above, where SGNS was used, here the decision whether two nodes are connected is performed by concatenating the embeddings for these two nodes, and performing a binary classification with a small neural network. It is important to note, that in this procedure, the target is always assumed to be not a part of the original graph. This objective was used to predict function names and variable names, used inside functions.
     \item Predicting edges between graph nodes
-    In this training mode, the general idea is the same as for the one above. The objective is to predict the presence of an edge between two nodes. Both nodes are a part of the main graph. The edges that the objective tries to predict - are not present in the main graph. This objective was used to predict next\_call edges.
+    In this training mode, the general idea is the same as for the one above. The objective is to predict the presence of an edge between two nodes. Both nodes are a part of the main graph. The edges that the objective tries to predict - are not present in the main graph. This objective was used to predict the next\_call edges.
 \end{enumerate}
 
 \subsection{Train Test Splitting Policy}
 
 For the sake of training, the data is split into three parts: train, validation and test sets. The objective functions take the embedding of a node in the graph and apply some transformation to this embedding. For this reason, the data split is performed based on the nodes (not the edges). Only those edges are allowed in the train set, which have the source node id listed in the train set. There can be multiple destinations for the same source node. The destinations are randomly sampled during training. 
-There should be no (significant) leak of training signals from the train to the test set. The src nodes appear either in train or in test set. If node A is from the train set, node B is from the test set, and C is a common target, then edge A->C is used for training, B->C used for testing. But in future experiments embedding for C is trained from scratch, so there should be no leak.
+There should be no (significant) leak of training signals from the train to the test set. The src nodes appear either in the train or in test sets. If node A is from the train set, node B is from the test set, and C is a common target, then edge A->C is used for training, B->C used for testing. But in future experiments embedding for C is trained from scratch, so there should be no leak.
 
 \section{\uppercase{Description of experiments}}
 
-All of the experiments listed below share a few preprocessing steps. The goal of the experiments is to study the transferability of the learned embeddings to a task, different to the one the model was trained on. To achieve this, we make use of the train test split generated in the process of training our GNN network. We use nodes listed in the test set to train additional classifier that tries to predict the existence of edges between nodes. The type of predicted edges depend on the experiment. 
-For the sake of training and testing additional classifier, edges are split into train and test sets. The split is performed on the basis of the src nodes. We use src nodes because they are always taken from the original graph, where as dst nodes can represent nodes that were not present in the original graph. We split src nodes into train and test sets and use some src nodes only for training, and some - only for testing. During all of the experiments, the embeddings for the nodes of the original graph stay fixed. Training procedure updates the parameters of the binary classifier, and, if such nodes are present, the parameters of the foreign dst nodes. 
+All of the experiments listed below share a few preprocessing steps. The goal of the experiments is to study the transferability of the learned embeddings to a task, different to the one the model was trained on. To achieve this, we make use of the train test split generated in the process of training our GNN network. We use nodes listed in the test set to train an additional classifier that tries to predict the existence of edges between nodes. The type of predicted edges depend on the experiment. 
+For the sake of training and testing additional classifier, edges are split into train and test sets. The split is performed on the basis of the src nodes. We use src nodes because they are always taken from the original graph, where as dst nodes can represent nodes that were not present in the original graph. We split src nodes into train and test sets and use some src nodes only for training, and some --- only for testing. During all of the experiments, the embeddings for the nodes of the original graph stay fixed. The training procedure updates the parameters of the binary classifier, and, if such nodes are present, the parameters of the foreign dst nodes. 
 In all experiments, only positive edges are present. The negative edges are sampled dynamically during training. Since the pool of src nodes is fixed (either by train and test sets), we sample dst nodes. We explored two negative sampling procedures. The first samples dst nodes uniformy. The second, samples dst nodes from the noise distribution, defined by scaled unigram distribution. The same noise distribution was used in Word2Vec.
 
 \begin{enumerate}
