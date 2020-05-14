@@ -21,11 +21,11 @@
 
 \title{Evaluating early results in XXX}
 
-\author{\authorname{Vladimir Ivanov\orcidAuthor{0000-000x-xxxx-xxxx}, Vitaly Romanov\orcidAuthor{0000-000x-xxxx-xxxx}, Giancarlo Succi\orcidAuthor{0000-0001-8847-0186}
-}
-\affiliation{\sup{1}Innopolis University, Russia}
-\email{\{f.last\}@innopolis.ru}
-}
+% \author{\authorname{Vladimir Ivanov\orcidAuthor{0000-000x-xxxx-xxxx}, Vitaly Romanov\orcidAuthor{0000-000x-xxxx-xxxx}, Giancarlo Succi\orcidAuthor{0000-0001-8847-0186}
+% }
+% \affiliation{\sup{1}Innopolis University, Russia}
+% \email{\{f.last\}@innopolis.ru}
+% }
 
 \keywords{}
 
@@ -48,14 +48,16 @@ There are several papers that investigated what a model can learn from a particu
 
 Our contribution is the following
 \begin{itemize}
-    \item We introduce a source-graph-dataset that captures information about global relationships between over 100 Python packages;
+    \item We introduce a source-graph-dataset that captures information about global relationships between over 100 Python packages\footnote{link to dataset};
     \item We evaluate the usefulness of a global graph on several machine learning tasks, including SCO name prediction, variable name usage prediction, API call sequence prediction. For our experiments we use Graph Neural Networks (GNNs);
-    \item We evaluate the transferability of learned distributed representations of graph nodes by training additional models that try to predict different properties of SCOs. Additional tasks include function call prediction, type use prediction, node type prediction.
+    \item We explore the usefulness of multitask objective using different GNN architectures
+    \item We demonstrate that the embeddings for SCOs pre-trained on one task can be applied to solve other tasks such as function call prediction, type use prediction, node type prediction;
+    \item We assess the importance of different types of edges in the global graph for successfully learning an objective. 
 \end{itemize}
 
-The rest of the paper is organized as follows.
+The rest of the paper is organized as follows. In section \ref{sec:related} we overview related work. In section \ref{sec:main} we discuss the main training objectives and our GNN models. In sections \ref{sec:training} we explain our GNN training process. In section \ref{sec:experiments} we explain our experiments for assessing transfer learning. In section \ref{sec:setup} we state our choice of hyper parameters and explain our experimental observations. In section \ref{sec:discuss} we explain some of our design choices. Section \ref{sec:conclusion} concludes the paper.
 
-\section{\uppercase{Related Work}}
+\section{\uppercase{Related Work}}\label{sec:related}
 
 Machine learning approaches are rapidly adopted in many different areas, including solving problems in source code analysis. The list of problems that were already attempted include tasks such as bug detection \cite{Dinella2020} \cite{Wang2019} and API search \cite{Zhang2019} \cite{Wan2019}. These problems present a fundamental challenge for methods of source code analysis because they require the understanding of the program purpose. Other applications include type prediction \cite{Hellendoorn2018} \cite{Malik2019}, variable name prediction \cite{Cvitkovic2018} \cite{Bichsel2016}, function name prediction \cite{Lacomis2019} \cite{Alon2018}, program classification \cite{Ben-Nun2018} \cite{Zhou2019} \cite{Dam2019}, program summarization \cite{Fernandes2019} \cite{Shido2019} and other \cite{Nguyen2015} \cite{Yang2019} \cite{Chen2019} \cite{Drissi2018}.  
 
@@ -79,7 +81,7 @@ In \cite{Kanade2019}, authors studied the possibility of pre-training representa
 
 
 
-\section{\uppercase{Main Task Description}}
+\section{\uppercase{Main Task Description}}\label{sec:main}
 
 \subsection{Global Graph Description}
 
@@ -134,7 +136,7 @@ Inherit         & 26525 \\ \bottomrule
 \caption{Edge count in Python graph by edge type\label{tbl:python_edge_count}}
 \end{table}
 
-\subsection{Description of Learning Objectives}
+\subsection{Description of Learning Objectives}\label{sec:objectives}
 
 % In this paper, we pursue several goals. First, we are studying global graph representation for the source code. We do this by evaluating a GNN model trained on this graph on several tasks. 
 One of our goals is to evaluate a GNN model trained on a global source graph. We do this by training this model using several objectives.
@@ -149,7 +151,14 @@ Some of the objectives are defined only for a subset of nodes. However, the GNNs
 
 All of three objectives can be treated as link prediction problems. During the training, embeddings for two nodes are passed to the classifier for link prediction. The two nodes specify the source and destination of a directed edge. Depending on the objective, the two nodes are taken from different groups. The source node always represent an SCO object in the global graph, and its embedding is computed using GNN\@. The second node can be either a node for SCO name, a node for the variable name, or another SCO\@. In the case of names, the embedding for the second node is drawn form a dedicated embedding table. Otherwise, it is also generated by GNN\@. The link prediction is implemented by concatenating the embeddings for the source and destination of the edge, and passing the resulting vector to a binary classifier. We implement this classifier using a simple neural network.
 
-We use three objectives explained above to train several GNN models to see to which extent the information about global relationships is useful for solving these tasks. Moreover, we experiment with a multitask objective. After, we investigate the applicability of learned distributed representations to predict properties of some of the nodes in the global graph with a series of experiments. These experiments are designed to identify the usefulness of objectives described above for solving other tasks. The details of these experiments are given in XXX.
+We use three objectives explained above to train several GNN models to see to which extent the information about global relationships is useful for solving these tasks. Moreover, we experiment with a multitask objective. After, we investigate the applicability of learned distributed representations to predict properties of some of the nodes in the global graph with a series of experiments. These experiments are designed to identify the usefulness of objectives described above for solving other tasks. The details of these experiments are given in Figure \ref{fig:model}.
+
+\begin{figure*}
+    \centering
+    \includegraphics[width=\textwidth]{model.pdf}
+    \caption{Schematic representation of the multitask training procedure training procedure. The final neural networks makes a binary decision whether the edge exists or not.}
+    \label{fig:model}
+\end{figure*}
 
 \subsection{GNN Models}
 
@@ -175,7 +184,7 @@ We tried to use other approaches for learning representations for nodes, specifi
 % $$
 
 
-\section{\uppercase{GNN Training Procedure}}
+\section{\uppercase{GNN Training Procedure}}\label{sec:training}
 
 In the process of training a GNN model on one of the objectives, embeddings for graph nodes are learned. These embeddings are used in several scenarios. First, they are passed to the classifier that predicts links for the main objective. Second, they are used in further experiments with transfer learning. Because of this setting, the optimization of the main objective can be seen as the pre-training step. The assessment of transfer learning requires training additional models on parts of the same graph.
 
@@ -187,9 +196,9 @@ Due to the need to evaluate the usefulness of the learned embeddings for the tra
     \item What is the list of experiments for assessing the transferability of learned embeddings
 \end{itemize}
 
-The entire training and testing procedure is shown in Figure XXX.
+\textcolor{red}{The entire training and testing procedure is shown in Figure XXX.}
 
-\subsection{Dataset Splits for Training and Evaluation}
+\subsection{Dataset Splits for Training and Evaluation}\label{sec:splits}
 
 The global graph is prepared in the following way:
 \begin{enumerate}
@@ -197,15 +206,15 @@ The global graph is prepared in the following way:
     \item Training objectives will be defined based on node embeddings. For this reason, the train, test, and validation sets are creating splitting on nodes. The test set is used in future experiments for training and testing. Validation and test sets are equal in size and constitute 40\% of all nodes.
 \end{enumerate}
 
-\subsection{GNN Training Procedure}
+\subsection{GNN Training Procedure}\label{sec:gnn_training}
 
-As it was mentioned above, the nodes are split into three groups: train, validation and test sets. As it was described in XXX, the goal is to predict the presence of a link between the source and destination nodes. During the training, only positive samples are available in the dataset. The negative samples are generated randomly. When preparing a batch for training, we take source nodes from the train set. Then, we sample the positive edges that are available for these nodes in the global graph. After, we generate negative edges by sampling destination nodes using the negative sampling procedure from~\cite{mikolov2013distributed}. The fact that the graph edges are split into the train and validation sets based on the source node allows the link prediction classifier to observe all the connections of a specific node. Then, it can transfer its knowledge onto the edges with source nodes that it has never observed before.
+As it was mentioned above, the nodes are split into three groups: train, validation and test sets. As it was described in section \ref{sec:splits}, the goal is to predict the presence of a link between the source and destination nodes. During the training, only positive samples are available in the dataset. The negative samples are generated randomly. When preparing a batch for training, we take source nodes from the train set. Then, we sample the positive edges that are available for these nodes in the global graph. After, we generate negative edges by sampling destination nodes using the negative sampling procedure from~\cite{mikolov2013distributed}. The fact that the graph edges are split into the train and validation sets based on the source node allows the link prediction classifier to observe all the connections of a specific node. Then, it can transfer its knowledge onto the edges with source nodes that it has never observed before.
 
 The evaluation of the quality of the model is performed in a similar way. We take nodes from the validation set, and take all positive edges for these nodes. In addition, we generate negative edges using the negative sampling procedure describe above. The number of positive and negative samples is equal. We assess the quality of the model using accuracy. This way, the accuracy of the random baseline is 0.5.
 
-\section{\uppercase{Experiments for Transfer Learning}}
+\section{\uppercase{Experiments for Transfer Learning}}\label{sec:experiments}
 
-One of our goals is to study the transferability of learned representations for nodes onto different tasks. For this reason, we use embeddings trained using objectives described in XXX for predicting some of the properties of these nodes. All of the properties are posed as link prediction problems. In fact, the experiments described below help to assess how useful learned node embeddings are for predicting other links in the global graph. The list of experiments include:
+One of our goals is to study the transferability of learned representations for nodes onto different tasks. For this reason, we use embeddings trained using objectives described in section \ref{sec:objectives} for predicting some of the properties of these nodes. All of the properties are posed as link prediction problems. In fact, the experiments described below help to assess how useful learned node embeddings are for predicting other links in the global graph. The list of experiments include:
 \begin{enumerate}
     \item \textbf{Predicting SCO name} 
     This task is the exact copy of one of the objectives of the main task. It is expected that is the main objective was to predict SCO names, the experiment should show nearly identical performance. Moreover, this task allows to evaluate whether embeddings trained on predicting next calls are useful for predicting names as well. 
@@ -221,14 +230,14 @@ One of our goals is to study the transferability of learned representations for 
     In this procedure, a simple node embedding classifier is applied. This procedure does not require to predict the interaction between two nodes and requires only one node embedding as an input. 
 \end{enumerate}
 
-The training procedure for the experiments listed above resembles the procedure for training the main objective that was described in XXX. The experiments are performed only on nodes that were previously reserved for the test set. The embeddings for nodes were precomputed previously using GNN and now are retrieved using an embedding table. The embeddings for the SCO nodes remain unchanged during the experiments. This ensures that we test what can be extracted from these embeddings instead of using them merely for initialization. 
+The training procedure for the experiments listed above resembles the procedure for training the main objective that was described in section \ref{sec:gnn_training}. The experiments are performed only on nodes that were previously reserved for the test set. The embeddings for nodes were precomputed previously using GNN and now are retrieved using an embedding table. The embeddings for the SCO nodes remain unchanged during the experiments. This ensures that we test what can be extracted from these embeddings instead of using them merely for initialization. 
 
 We take the test set of nodes that was generated during preparation of the main objective. We split this set into the new train and test sets. Then, the SCO embeddings are used for link prediction. It is worth noting that we train embedding for names (including variable names) and the link prediction classifier from scratch. The summary of what is trained for each experiment is shown in Table~\ref{tbl:experiment_desc}.
 
 \begin{table*}
     \centering
     \caption{Description of experiments and what is trained}\label{tbl:experiment_desc}
-    \begin{tabular}{p{3cm}p{6cm}p{6cm}}
+    \begin{tabular}{p{3cm}p{6cm}p{5cm}}
     \toprule
         \textbf{Experiment} & \textbf{Model description} & \textbf{What is trained} \\ \midrule
         Next function, Function call, Type usage & Both nodes have pre-trained embeddings. Node embeddings are concatenated and classified & Binary classifier for link prediction \\ \midrule
@@ -239,7 +248,7 @@ We take the test set of nodes that was generated during preparation of the main 
 
 
 
-\section{\uppercase{Experimental Setup and Results}}
+\section{\uppercase{Experimental Setup and Results}}\label{sec:setup}
 
 For implementing GNN training procedure we use DeepGraphLibrary. We use standard implementations of GAT and RGCN networks. For GAT, we use the size of the hidden representation of 50 with two-head-attention. This yields hidden state representation of size 100. In all layers, we use LeakyReLU as activation because, according to our observations, it produced the best results for this type of GNN\@. For RGCN, we use the size of hidden layers equal to 100. HardTanh was chosen as the activation function. Both network types have three layers in total. 
 
@@ -249,96 +258,155 @@ The negative sampling procedure is similar to the one used in \cite{mikolov2013d
 
 \subsection{Performance on Main Objective}
 
-Our training and evaluation procedure consists of several steps. First, we talk about the result of training the main objectives. The four main objectives that we explored are described in XXX. 
+Our training and evaluation procedure consists of several steps. First, we talk about the result of training on the main objectives. The four main objectives that we explored are described in section \ref{sec:objectives}. 
 
-The GNN model struggled the most to predict SCO names. This is expected because, in general, to predict SCO names correctly, the algorithm should understand high-level information about a SCO\@. In our global graph, the only information that a predictor can use is the degree of a node in a graph, and the types of relationships. The number of different relationships is small, and the degree of a node is likely a bad predictor of SCO name. Nevertheless, the accuracy was observed to be larger for models without multitask, that optimize specifically name prediction.
+Our GNN models struggled the most to predict SCO names. This is expected because, in general, to predict SCO names correctly, the algorithm should understand high-level information about a SCO\@. In our global graph, the only information that a predictor can use is the degree of a node in a graph, and the types of relationships. Additionally, it can get insight into a small neighborhood at the distance of 2 from the current node (based on the numbed of GNN layers). The number of different relationships is small, and the degree of a node is likely a bad predictor of SCO name. Nevertheless, the accuracy was observed to be larger for models without multitask, that optimize specifically for name prediction.
 
-Variable name usage prediction is a much more relaxed problem. Variable names are highly reused in different contexts. The fact that two functions share many variable names in common can signify that they are likely implement similar or related functionality. For this objective, we see a consistent improvement with the increase of the model complexity. The outcome was better for models trained on multitask objectives and models that support relationship types.
+Variable name usage prediction is a much more relaxed problem. Variable names are highly reused in different contexts. The fact that two functions share many variable names in common can signify that they are likely to implement similar or related functionality. For this objective, we see a consistent improvement with the increase of the model complexity. The outcome was better for models trained on multitask objectives and models that support relationship types.
 
-The last objective was to predict which function will be called next. The performance for this objective was the highest, suggesting that the models were able to learn stable call sequence paths to some degree. The outcome was better for the relational model and improved significantly when trained on multitask objective. 
+The last objective was to predict which a function that will be called next. The performance for this objective was the highest, which suggests that the models were able to learn stable call sequence paths to some degree. The outcome was better for the relational model and improved significantly when trained on the multitask objective. 
 
-These results demonstrate that the global graph contains some information that can be used for learning API call sequences, some information about SCO names and variable usages. It is worth mentioning that all of these problems have an ample search space. The number of unique destinations for SCO name prediction is 197625, for variable usage --- 141585, and for predicting next call --- 72869. The summary of these results are shown in Figure~\ref{fig:main_obj}.
+These results demonstrate that the global graph contains some information that can be used for learning API call sequences, some information about SCO names and variable usages. It is worth mentioning that all of these problems have an ample search space. The number of unique destinations for SCO name prediction is 197625, for variable usage --- 141585, and for predicting next call --- 72869. The accuracy performance for these objectives s not very high (except for the next call predictions), which suggests that global graph relationships can be used for augmenting other representations, but are likely not sufficient on their own for solving practical problems. The summary of these results are shown in Figure~\ref{fig:main_obj}.
 
 \begin{figure}[]
     \centering
-    \includegraphics[\columnwidth]{main_objective.pdf}
+    \includegraphics[width=\columnwidth]{main_objective.pdf}
     \caption{Accuracy on the validation set when training main objectives on the global graph. The color of a bar represents the model architecture that was used during training. During multitask, all three objectives are optimized at the same time.}\label{fig:main_obj}
 \end{figure}
 
 \subsection{Transfer Learning Experiments}
 
-In this part, we are going to discuss the performance of embeddings trained with different architectures on transfer learning tasks. We conducted a series of experiments. For each of the models trained with the main objective we also evaluated the performance on additional tasks. Finally, we compared this performance with randomly initialized embeddings for SCOs. When training models for our experiments we passed the test scores after each epoch through the exponential moving average (of length 10), and recorded only the maximum test score. The result of these experiments for GAT are shown in Figure~\ref{fig:transfer_gat} and for RGCN --- Figure~\ref{fig:transfer_rgcn}.
+In this part, we are going to discuss the performance of node embeddings on transfer learning tasks. We conducted a series of experiments, and compared the performance of pre-trained embeddings with randomly initialized embeddings for SCOs. When training models for our experiments, we passed the test scores after each epoch through the exponential moving average (of length 10), and recorded only the maximum test scores. The result of these experiments for GAT are shown in Table \ref{tbl:transfer_results}.
+% Figure~\ref{fig:transfer_gat} and for RGCN --- Figure~\ref{fig:transfer_rgcn}.
 
-For the first three experiments we can see that results are accuracy is higher when the embeddings are trained on the same objective. This result is challenged only by multitask objectives. The fact that multitask objective results in the average increase of accuracy suggests that these tasks are not entirely independent.
+For the first three experiments we can see that the accuracy is higher when the embeddings are trained on the same objective. This result is challenged only by multitask objectives. The fact that multitask objective results in the average increase of accuracy suggests that these tasks are not entirely independent.
 
-THe problem of predicting SCO names is a hard one, and the result s barely change when a different pre-training objective is used. The results on variable usage prediction suggest that there is an improvement for both GAT and RGCN when the multitask objective is used. The accuracy of predicting the next call grows significantly when the multitask objective and relationship types are used. The results for predicting function calls correlate with the results of the next call prediction. The results for accuracy on type usage vary a lot and do not display any specific improvements for different pre-training objectives. This can be accounted to the small test size and the large variance in the test scores. Another possible explanation is a weak coupling between pre-training objectives and actual use of specific types. Interestingly, SCO names seem to correlate with node type (to be expected). As a consequence, all models show that node type prediction is better when pre-trained on SCO names. Another notable observation is that relationship types seem to be very important for predicting node types (also, to be expected).
+The problem of predicting SCO names is a hard one, and the result is barely changed when a different pre-training objective is used. The results on variable usage prediction suggest that there is an improvement for both GAT and RGCN when the multitask objective is used. 
 
-Despite RGCN being conceptually superior because it support relationship types, the results show that the difference between these models is very small when trained with the multitask objective. The side by side comparison of the performance of multitask models is shown in Figure~\ref{fig:mt_comparison}. 
+The accuracy of predicting the next call grows significantly when the multitask objective and relationship types are used. The results for predicting function calls correlate with the results of the next call prediction. 
+
+The accuracy for predicting type usage varies a lot and does not display any specific improvements for different pre-training objectives. This can be attributed to a small test size and the large variance in the test scores. Another possible explanation is a weak coupling between pre-training objectives and actual use of specific types. 
+
+Interestingly, SCO names seem to correlate with node type (to be expected). As a consequence, all models show that node type prediction is better when pre-trained on SCO names. Another notable observation is that relationship types seem to be very important for predicting node types (also, to be expected).
+
+Despite RGCN being conceptually superior because it support relationship types, the results show that the difference between GAT and RGCN is very small when trained with the multitask objective. The side by side comparison of multitask models is shown in Figure~\ref{fig:mt_comparison}. 
+
+\begin{table*}[]
+\centering
+\caption{Results from using pre-trained embeddings for different problems}
+\label{tbl:transfer_results}
+\begin{tabular}{llllllll} \toprule
+\textbf{Model}  & \textbf{SCO name} & \textbf{Var usage} & \textbf{Next call} & \textbf{Call}  & \textbf{Type usage} & \textbf{Node type} & \textbf{Average} \\ \midrule
+Random init     & 52.6              & 64.81              & 60.75              & 52.84          & 53.38               & 46.45              & 55.13            \\ \midrule
+GAT, SCO name   & 63.6              & 74.86              & 82.29              & 65.04          & 57.81               & \textbf{65.51}     & 68.18            \\ \midrule
+GAT, Var usage  & 61.8              & 75.3               & 81.7               & 71.19          & 67.28               & 58.01              & 69.21            \\ \midrule
+GAT, Next call  & 60.13             & 72.91              & 87.82              & 72.86          & \textbf{69.29}      & 52.6               & 69.26            \\ \midrule
+RGCN. SCO name  & 63.27             & 76.28              & 86.37              & 65.07          & 64.67               & 81.84              & 72.91            \\ \midrule
+RGCN. Var usage & 63.73             & 78.33              & 89.09              & 73.24          & 68.72               & 80.9               & 75.66            \\ \midrule
+RGCN. Next call & 63.02             & 76.62              & 92.22              & 74.54          & 66.76               & 77.73              & 75.14            \\ \midrule
+GAT-MT          & 62.79             & 78.17              & \textbf{92.8}      & \textbf{80.03} & 65.51               & 63.43              & 73.78            \\ \midrule
+RGCN-MT         & \textbf{64.48}    & \textbf{78.88}     & 91.54              & 74.44          & 63.9                & 81.62              & \textbf{75.81}  \\ \bottomrule
+\end{tabular}
+\end{table*}
+
+% \begin{figure}[]
+%     \centering
+%     \includegraphics[width=\columnwidth]{transfer_gat.pdf}
+%     \caption{Accuracy on additional experiments when using embeddings trained with GAT\@. The color of a bar corresponds to the main training objective.}\label{fig:transfer_gat}
+% \end{figure}
+
+% \begin{figure}[]
+%     \centering
+%     \includegraphics[width=\columnwidth]{transfer_rgsn.pdf}
+%     \caption{Accuracy on additional experiments when using embeddings trained with RGCN\@. The color of a bar corresponds to the main training objective.}\label{fig:transfer_rgcn}
+% \end{figure}
 
 \begin{figure}[]
     \centering
-    \includegraphics[\columnwidth]{transfer_gat.pdf}
-    \caption{Accuracy on additional experiments when using embeddings trained with GAT\@. The color of a bar corresponds to the main training objective.}\label{fig:transfer_gat}
-\end{figure}
-
-\begin{figure}[]
-    \centering
-    \includegraphics[\columnwidth]{transfer_rgcn.pdf}
-    \caption{Accuracy on additional experiments when using embeddings trained with RGCN\@. The color of a bar corresponds to the main training objective.}\label{fig:transfer_rgcn}
-\end{figure}
-
-\begin{figure}[]
-    \centering
-    \includegraphics[\columnwidth]{mt_comparison.pdf}
+    \includegraphics[width=\columnwidth]{mt_comparison.pdf}
     \caption{Accuracy comparison for different types of multitask models. RGCN-5L corresponds to a GNN model with 5 layers}\label{fig:mt_comparison}
 \end{figure}
 
 \subsection{Comparing Performance of Embeddings from Different Layers}
 
-An intuitive question to ask is whether GNN steps are of any use of learning SCO embeddings. An alternative could be to optimize the embeddings for SCOs directly. We want to remind that one of the benefits of using GNNs is their robustness to partial labeling. The information from labeled nodes can propagate to unlabeled nodes. 
+An intuitive question to ask is whether GNN layers provide any benefit for learning SCO embeddings. An alternative could be to optimize the embeddings for SCOs directly. We want to remind that one of the benefits of using GNNs is their robustness to partial labeling. The information from labeled nodes can propagate to unlabeled nodes. 
 
 To investigate the value of message passing in GNN, we evaluated our experiments using embeddings from different layers of GNN\@. The results for RGCN with 3 layers are shown in Figure~\ref{fig:rgcn_layers_3}. We observe that the accuracy on different experiments improve rapidly and consistently with every layer (except type usage prediction). Three layers of GNN correspond to two message-passing steps. Therefore, a GNN with three layers can model only short distance dependencies.
 
-Since every layer brings improvements in accuracy, a natural urge is to add more layers. However, our experiments show that adding more layers is not guaranteed to bring better results. In Figure~\ref{fig:rgcn_layers_5} the analysis of accuracy for embeddings from RGCN with five layers is shown, The average accuracy did not exceed the accuracy of 3-layered model. Moreover, we can observe, that improvements between consecutive message passing became smaller. The fact that all three models shown in Figure~\ref{fig:mt_comparison} reach similar performance (despite their architectural differences) suggests that the accuracy for these models in the current setting is close to maximum. \textcolor{red}{Another explanation of why models with more layers do not achieve better accuracy is related to the general issue of GNNs to prefer a fewer number of layers.}
+Since every layer brings improvements in accuracy, a natural urge is to add more layers. However, our experiments show that adding more layers is not guaranteed to bring better results. In Figure~\ref{fig:rgcn_layers_5} the analysis of accuracy for embeddings from RGCN with five layers is shown. The average accuracy did not exceed the accuracy of 3-layered model. Moreover, we can observe, that improvements between consecutive message passing became smaller. The fact that all three models shown in Figure~\ref{fig:mt_comparison} reach similar performance (despite their architectural differences) suggests that the accuracy for these models in the current setting is close to maximum. \textcolor{red}{Another explanation of why models with more layers do not achieve better accuracy is related to the general issue of GNNs to prefer a fewer number of layers.}
 
 \begin{figure}[]
     \centering
-    \includegraphics[\columnwidth]{RGCN-3L.pdf}
-    \caption{Accuracy for embeddings from different layers of RGCN trained on the multitask objective.}\label{fig:rgcn_layers_3}
+    \includegraphics[width=\columnwidth]{rgcn-3l.pdf}
+    \caption{Accuracy for embeddings from different layers of RGCN-3L trained on the multitask objective.}\label{fig:rgcn_layers_3}
 \end{figure}
 
 \begin{figure}[]
     \centering
-    \includegraphics[\columnwidth]{RGCN-5L.pdf}
-    \caption{Accuracy for embeddings from different layers of RGCN trained on the multitask objective.}\label{fig:rgcn_layers_5}
+    \includegraphics[width=\columnwidth]{rgcn-5l.pdf}
+    \caption{Accuracy for embeddings from different layers of RGCN-5L trained on the multitask objective.}\label{fig:rgcn_layers_5}
 \end{figure}
 
 \subsection{Importance of Different Edges}
 
+It is important to understand the contribution of different relationship types into the performance of GNN models on different objectives. We train additional models on modified versions of the original global graph where one of the relationship types was filtered. We train these models for thirty epochs and report their final performance. The results are summarized in the Table \ref{tbl:ablation}.
 
-\section{\uppercase{Discussion}}
+The results show that the most significant drop in performance occurs after removing edges that signify that a method or function was defined inside the given class or module. Surprisingly, the performance did not suffer much after removing function call edges, although next call prediction accuracy slightly decreased. It is even more surprising because call edges constitute the larges proportion of all edge types (see Table \ref{tbl:python_edge_count}). The accuracy on SCO name prediction increased after removing type use edges. However, it is not clear whether this result is accidental or statistically significant. Removing inheritance and import edges did not affect the performance for these objectives. 
 
-\subsection{Splitting on nodes or edges}
+\begin{table}[]
+\centering
+\begin{tabular}{p{1.8cm}p{1.3cm}p{1.4cm}p{1.32cm}}
+\toprule
+\textbf{Filtered types} & \textbf{SCO name} & \textbf{Var usage} & \textbf{Next call} \\\midrule
+Full                         & 63.49             & 78.97              & 88.31              \\\midrule
+No inheritance              & 63.86             & 79.79              & 87.17              \\\midrule
+No import                    & 63.77             & 78.91              & 87.17              \\\midrule
+No type use                  & 64.62             & 78.4               & 87.92              \\\midrule
+No definitions            & 56.85             & 66.91              & 75.49              \\\midrule
+No calls                     & 63.28             & 78.72              & 86.08    \\         \bottomrule
+\end{tabular}
+\caption{The accuracy after training GNN models on modified versions of the global graphs with one of the relationship types filtered.}
+\label{tbl:ablation}
+\end{table}
 
-There should be no (significant) leak of training signals from the train to the test set. The src nodes appear either in the train or in test sets. If node A is from the train set, node B is from the test set, and C is a common target, then edge A->C is used for training, B->C used for testing. But in future experiments embedding for C is trained from scratch, so there should be no leak.
+\textcolor{red}{test set size}
 
-There are two ways to handle training data for the experiment. Most of the experiments can be seen as binary classification problem, that makes a decision whether an edge between two nodes exist. In these experiments src nodes are always a part of the original graph, and dst nodes sometimes can be some new nodes. The training data is given as a list of edges. There are two approaches to split this data into train and test set. The first, and the most evident approach, is to split edges into two groups. The second approach is to split the edges based on their src node. That is, use the edges with some src nodes only to train test, and the rest - in test set. 
-We argue that the second approach can give more information to the classifier about how to interpret the embeddings of the nodes from the original graph. When the edges are simply split into two groups, the some edges that share a common src node can appear in both train and test splits. This way, the classifier can struggle to predict some of the edges, because only the partial knowledge was present in the training set. However, when the split is performed on the basis of src nodes, the classifier has the opportunity to see how a node with a given embedding is connected to other nodes, and learn how to extract useful information from this embedding. 
+\section{\uppercase{Discussion}}\label{sec:discuss}
+
+\subsection{Splitting on Nodes or Edges}
+
+During training we used a procedure to create train and test splits. In this procedure, we divided SCO nodes into train and test groups and used these groups to generate training and testing edges. An intuitive alternative to this procedure is to simply split positive edges into train and test sets.
+
+We found that latter approach resulted in much smaller accuracy on transfer learning tasks. We explain this different as follows. When we split positive edges into the train and test sets, the link prediction classifier does not observe all possible relationships between SCOs it encounters during training. As a consequence, these training signals are not passed onto GNN weights. The quality of GNN embeddings is dependent on the message-passing procedure. When full information about how a separate node is connected used during training, other nodes benefit from this information as well. As a result, the data splitting strategy, where all source nodes appear either in train or test sets (but not both) results in better transfer learning performance. 
 
 \subsection{The need for multiple splits}
 
-A natural question is why all of these complicated data splits necessary. In this work we are using a GNN model to train node embeddings. These models implement message passing procedure. For this reason, GNN models are sometimes considered as semi-supervised. All the data is present in the same graph, and training signals naturally affect even unlabeled nodes. For this reason it is hard to make conclusions about the transferability of the learned embeddings. Moreover, the real datasets are rarely complete. By introducing several data splits and holdout sets we emulate the data incompleteness. This way we can show that even when trained on incomplete graph, the node embeddings can still be useful.
+In our experiments, we first perform data splits for pre-training the node representations. Then, for other experiments we perform additional splits. 
+A natural question is why all of these complicated data splits necessary. In this work we are using a GNN model to train node embeddings, which are sometimes considered as semi-supervised. All the data is present in the same graph, and training signals naturally affect even unlabeled nodes as well. For this reason it is hard to make conclusions about the transferability of the learned embeddings. Moreover, the real datasets are rarely complete. By introducing several data splits and holdout sets we emulate the data incompleteness. This way we can show that even when trained on incomplete graph, the node embeddings can still be useful.
 
 \subsection{The choice of negative sampling strategy}
 
-Distribution and parameter
+One of the important aspect for training representations is negative sampling. In this work we experimented with several negative sampling parameters. First, we tried to use uniform distribution to sample destination nodes. Our concern that the choice of the noise distribution mostly affects the bias of the final results. The link predictor can easily observe that some of the destination nodes are more popular than others. In previous works, it was shown that the distribution of SCOs indeed follow power law distribution, just like in the case of words in text corpora. By choosing a negative sampling distribution proportional to the actual distribution of destination edges we reduce the impact of the bias in our model. 
+
+Another important parameter is the number of negative samples. During our experiments we observed that the accuracy of transfer learning decreases with the increase of the number of negative samples. For this reason we choose to use the ratio of positive to negative samples of 1.
 
 \subsection{Evaluation approaches}
 
-We have two types of models. THe first type is used for node classification and has a very small number of target classes. We use accuracy to evaluate the quality of such models. The second type of model tries to decide whether there is an edge between two nodes. In essence, this model solves a binary classification problem. In order to evaluate this model, we take all the positive edges in the test split, and generate an equal amount of the negative edges. The equal proportion of the edges hints that the random baseline for accuracy should be around 0.5. However, this baseline is not relevant in our case for a couple of reasons. First, our goal is to evaluate embeddings. When we train a classifier, it will fit to the current embeddings. Because the target nodes are shared between training and testing edges, it is likely to see the accuracy above 0.5 after fitting the classifier. Second, our negative edges are randomly generated. There is a slight possibility that the generated edge is a good candidate to be a positive edge. To account for this, we conduct the same experiments with node embeddings randomly initialized, and use the resulting score as the random baseline.
-For models that have a large amount of target labels, it makes sense to use ranking measures. 
+In most of our experiments, we need to predict the existence of an edge between two nodes. In general, the problem can be seen as complex given the number of possible destination nodes. In our formulation, we solve a binary classification problem. In order to evaluate this model, we take all the positive edges in the test split, and generate an equal amount of the negative edges. The equal proportion of the edges hints that the random baseline for accuracy should be around 0.5. However, this is not necessarily the case. 
 
-\subsection{Hyperparameter search}
+Our goal is to evaluate embeddings. When we train a classifier, it can overfit to the destination embeddings. In case some of the destination nodes are highly connected, the classifier can predict the presence of a link whenever it sees a specific destination node. This can result in accuracy above 0.5 even when embeddings for SCOs are randomly initialized. We observe this effect in Figure \ref{fig:transfer_gat}. 
+
+One can argue that it is hard to interpret the accuracy measure for predicting SCO names, variable names, and next calls. A ranking measure, such as MAP can be used instead. We leave the investigation of other evaluation metrics for the future work.
+
+\subsection{Hyper-parameter search}
+
+In section \ref{sec:setup}, we mention our selected hyper parameters. This search was not arbitrary. Prior to conducting the transfer learning experiments, we performed a hyper-parameter search. Given our data and selected architectures, we found that the pre-training model performance does not grow significantly after increasing the size hidden layers beyond 100. Also, we observed that increasing the number of hidden layers does not result in significant performance improvements. For this reason we tried to choose the number of hyper-parameters so that the training process goes faster. 
+
+\section{\uppercase{Conclusions and Future Work}}\label{sec:conclusion}
+
+In this paper, we conducted a series of experiments to identify the value of global relationships in the source code represented as a graph for solving several tasks. Also, we investigated the possibility of transfer learning of representation of Source Code Objects (SCOs) such as classes, function, variables, etc. We performed this analysis by first pre-training representation for nodes in source code graph using several Graph Neural Network architectures. We used tasks such as SCO name prediction, variable usage prediction (for functions), next function call prediction as pre-training objectives. After, we evaluated the usefulness of learned embedding for solving relaed tasks. 
+
+We found that different tasks for source code such as function call prediction, node type predictions, type (class) usage predictions are related to the objectives mentioned above. Moreover, the task of predicting next function calls yields SCO embeddings that allow predicting SCO names better than random. This suggests that some level of information about SCOs can be inferred from global relationships, and not only from specific implementations. It is worth noting, that although the performance of different models in our tests showed that the learning model can extract hidden dependencies from global graph representation, this information is likely not sufficient on its own, and can be used as augmentation for other representations. 
 
 
 \bibliographystyle{apalike}
